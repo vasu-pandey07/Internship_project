@@ -2,10 +2,13 @@ import { io } from 'socket.io-client';
 
 let socket = null;
 
+const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+const socketServerURL = import.meta.env.VITE_SOCKET_URL || apiBaseURL.replace(/\/api\/v1\/?$/, '');
+
 export const connectSocket = (token) => {
   if (socket) return socket;
 
-  socket = io('http://localhost:5000', {
+  socket = io(socketServerURL, {
     auth: { token },
   });
 

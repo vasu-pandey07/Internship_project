@@ -5,7 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start:prod": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo \"No backend build step required for Node.js runtime\"",
+    "lint": "node -e \"const fs=require('fs');const path=require('path');const {execSync}=require('child_process');function walk(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){if(e.name==='node_modules'||e.name.startsWith('.')) continue;const p=path.join(d,e.name);if(e.isDirectory()) walk(p); else if(p.endsWith('.js')) execSync('node --check \\\"'+p+'\\\"',{stdio:'inherit'});} } walk(process.cwd());\"",
+    "test": "node -e \"console.log('No backend tests found yet. Add tests to replace this placeholder.');\""
   },
   "keywords": [
     "education",

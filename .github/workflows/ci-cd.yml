@@ -1,0 +1,146 @@
+name: MERN CI/CD
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint, Test, Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Lint backend
+        working-directory: server
+        run: npm run lint --if-present
+
+      - name: Test backend
+        working-directory: server
+        run: npm test --if-present
+
+      - name: Install frontend dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: client
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: client
+        run: npm run build
+
+  deploy-frontend-vercel:
+    name: Deploy Frontend (Vercel)
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment
+        working-directory: client
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Vercel artifact
+        working-directory: client
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        working-directory: client
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  deploy-frontend-netlify:
+    name: Deploy Frontend (Netlify)
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: client
+        run: npm run build
+
+      - name: Install Netlify CLI
+        run: npm install --global netlify-cli@latest
+
+      - name: Deploy to Netlify
+        run: netlify deploy --dir=client/dist --prod --site=${{ secrets.NETLIFY_SITE_ID }} --auth=${{ secrets.NETLIFY_AUTH_TOKEN }}
+
+  deploy-backend-hook:
+    name: Deploy Backend (Render/Railway Deploy Hook)
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.BACKEND_DEPLOY_HOOK_URL != ''
+
+    steps:
+      - name: Trigger deploy hook
+        run: curl -fsS -X POST "${{ secrets.BACKEND_DEPLOY_HOOK_URL }}"
+
+  deploy-backend-ec2:
+    name: Deploy Backend (AWS EC2 via SSH)
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.EC2_HOST != '' && secrets.EC2_USER != '' && secrets.EC2_SSH_KEY != '' && secrets.EC2_APP_DIR != ''
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.EC2_APP_DIR }}"
+            git fetch origin
+            git checkout main
+            git pull origin main
+            cd server
+            npm ci --omit=dev
+            pm2 restart eduplatform-api || pm2 start server.js --name eduplatform-api
+            pm2 save
