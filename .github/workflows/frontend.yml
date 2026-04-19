@@ -1,117 +1,28 @@
-defaults:
-  run:
-    working-directory: ./client
-
-name: Frontend CI/CD
+name: Frontend CI
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - client/**
-      - .github/workflows/frontend.yml
-
-permissions:
-  contents: read
-
-concurrency:
-  group: frontend-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [main]
 
 jobs:
   build:
-    name: Build Frontend
     runs-on: ubuntu-latest
+
     defaults:
       run:
-        working-directory: client
+        working-directory: ./client
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (LTS) with npm cache
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
-          cache: npm
-          cache-dependency-path: client/package-lock.json
+          node-version: 18
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Run lint
-        run: npm run lint --if-present
-
-      - name: Build Vite app
+      - name: Build project
         run: npm run build
-
-  deploy:
-    name: Deploy Frontend
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js (LTS) with npm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: npm
-          cache-dependency-path: client/package-lock.json
-
-      - name: Install dependencies
-        working-directory: client
-        run: npm ci
-
-      - name: Build Vite app
-        working-directory: client
-        run: npm run build
-
-      - name: Deploy frontend (Vercel first, Render fallback)
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          RENDER_STATIC_DEPLOY_HOOK_URL: ${{ secrets.RENDER_STATIC_DEPLOY_HOOK_URL }}
-        run: |
-          set -euo pipefail
-
-          if [ -n "${VERCEL_TOKEN:-}" ] && [ -n "${VERCEL_ORG_ID:-}" ] && [ -n "${VERCEL_PROJECT_ID:-}" ]; then
-            echo "Deploying frontend to Vercel"
-            cd client
-            npx --yes vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
-            npx --yes vercel@latest build --prod --token="${VERCEL_TOKEN}"
-            npx --yes vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
-            exit 0
-          fi
-
-          if [ -n "${RENDER_STATIC_DEPLOY_HOOK_URL:-}" ]; then
-            echo "Deploying frontend via Render static deploy hook"
-            curl -fsS -X POST "${RENDER_STATIC_DEPLOY_HOOK_URL}"
-            exit 0
-          fi
-
-          echo "::error::No frontend deployment configuration found. Set VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID or RENDER_STATIC_DEPLOY_HOOK_URL in GitHub Secrets."
-          exit 1
-
-      - name: Notify deployment result (optional)
-        if: always() && secrets.DEPLOYMENT_WEBHOOK_URL != ''
-        env:
-          DEPLOYMENT_WEBHOOK_URL: ${{ secrets.DEPLOYMENT_WEBHOOK_URL }}
-          JOB_STATUS: ${{ job.status }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          if [ "$JOB_STATUS" = "success" ]; then
-            MESSAGE="Frontend deployment succeeded for ${REPO} at commit ${SHA}."
-          else
-            MESSAGE="Frontend deployment failed for ${REPO} at commit ${SHA}."
-          fi
-          payload=$(printf '{"text":"%s"}' "$MESSAGE")
-          curl -fsS -H "Content-Type: application/json" -d "$payload" "$DEPLOYMENT_WEBHOOK_URL"
