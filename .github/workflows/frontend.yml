@@ -24,7 +24,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-    - name: Build project
-  run: npm run build
-  env:
-    VITE_API_URL: http://localhost:5000
+      - name: Build project
+        run: npm run build
+        env:
+          VITE_API_URL: http://localhost:5000
+          VITE_STRIPE_KEY: test_key
