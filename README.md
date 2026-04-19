@@ -2,6 +2,9 @@
 
 A production-ready **Coursera/Udemy-style** education platform built with the **MERN stack**.
 
+![Backend CI/CD](https://github.com/<OWNER>/<REPO>/actions/workflows/backend.yml/badge.svg)
+![Frontend CI/CD](https://github.com/<OWNER>/<REPO>/actions/workflows/frontend.yml/badge.svg)
+
 ## 🚀 Features
 
 ### 🎓 Student
@@ -161,6 +164,67 @@ db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })
 | Notifications | `GET /`, `PUT /:id/read`, `PUT /read-all` |
 
 All routes prefixed with `/api/v1`.
+
+---
+
+## CI/CD (GitHub Actions)
+
+Workflows are split by app layer:
+
+- Backend workflow: `.github/workflows/backend.yml`
+- Frontend workflow: `.github/workflows/frontend.yml`
+
+Both workflows run on push to `main`, use Node.js LTS, install dependencies with `npm ci`, enable npm dependency caching, and separate build/test from deployment.
+
+### 1. Configure GitHub Secrets
+
+In GitHub: **Repository -> Settings -> Secrets and variables -> Actions -> New repository secret**
+
+Required backend application secrets:
+
+- `MONGO_URI`
+- `JWT_SECRET`
+- `STRIPE_SECRET_KEY`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+Backend deployment secrets (Render):
+
+- Option A (recommended): `RENDER_DEPLOY_HOOK_URL`
+- Option B: `RENDER_API_KEY` and `RENDER_SERVICE_ID`
+
+Frontend deployment secrets:
+
+- Vercel option: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
+- Render static site option: `RENDER_STATIC_DEPLOY_HOOK_URL`
+
+Optional deployment notification secret:
+
+- `DEPLOYMENT_WEBHOOK_URL` (Slack/Teams/Discord compatible incoming webhook)
+
+### 2. Render backend setup
+
+1. Open Render dashboard and select your backend web service.
+2. In **Settings**, copy the Deploy Hook URL and save it as `RENDER_DEPLOY_HOOK_URL` in GitHub Secrets.
+3. Keep environment variables in Render service settings (runtime) and in GitHub Secrets (for CI test/build usage).
+
+### 3. Vercel frontend setup
+
+1. Import the `client` app into Vercel.
+2. From Vercel project settings, copy `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
+3. Create a Vercel token and save all three values as GitHub Secrets.
+
+### 4. Enable badges
+
+Replace `<OWNER>/<REPO>` in the badge URLs near the top of this README with your actual GitHub owner and repository name.
+
+### 5. Workflow behavior summary
+
+- Backend: checkout -> setup Node LTS -> install -> lint -> test -> build -> deploy to Render.
+- Frontend: checkout -> setup Node LTS -> install -> lint -> build Vite app -> deploy to Vercel (fallback to Render static hook).
+- Deploy jobs run only after successful build jobs.
+- Notifications are posted on success/failure when `DEPLOYMENT_WEBHOOK_URL` is configured.
 
 ---
 

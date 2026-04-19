@@ -12,6 +12,7 @@ const { asyncHandler, ApiError } = require('../utils/helpers');
  */
 const createCheckout = asyncHandler(async (req, res) => {
   const { courseId } = req.body;
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
   const course = await Course.findById(courseId);
   if (!course) throw new ApiError('Course not found', 404);
@@ -42,8 +43,8 @@ const createCheckout = asyncHandler(async (req, res) => {
       },
     ],
     mode: 'payment',
-    success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+    success_url: `${clientUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${clientUrl}/payment/cancel`,
     metadata: {
       courseId: course._id.toString(),
       studentId: req.user._id.toString(),

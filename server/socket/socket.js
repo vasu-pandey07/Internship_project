@@ -8,10 +8,14 @@ let io;
 
 const initSocket = (server) => {
   const { Server } = require('socket.io');
+  const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
     },
   });
