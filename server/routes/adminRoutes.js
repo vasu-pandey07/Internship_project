@@ -5,6 +5,7 @@ const {
   updateUserRole,
   deleteUser,
   getPendingCourses,
+  getCourseReview,
   updateCourseStatus,
   deleteCourse,
   getAnalytics,
@@ -18,6 +19,7 @@ router.get('/users', getUsers);
 router.put('/users/:id/role', updateUserRole);
 router.delete('/users/:id', deleteUser);
 router.get('/courses/pending', getPendingCourses);
+router.get('/courses/:id/review', getCourseReview);
 router.put('/courses/:id/status', updateCourseStatus);
 router.delete('/courses/:id', deleteCourse);
 router.get('/analytics', getAnalytics);

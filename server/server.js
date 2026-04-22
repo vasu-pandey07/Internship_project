@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
+const path = require('path');
 
 // Load environment variables
 dotenv.config();
@@ -38,10 +39,17 @@ const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const isLocalDevOrigin = (origin) => {
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+};
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser clients and configured frontend origins
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow non-browser clients and configured frontend origins.
+    // In development, also allow localhost origins when Vite changes port (e.g., 5173 -> 5174).
+    const isAllowedDevLocal = process.env.NODE_ENV !== 'production' && isLocalDevOrigin(origin);
+    if (!origin || allowedOrigins.includes(origin) || isAllowedDevLocal) {
       callback(null, true);
       return;
     }
@@ -69,6 +77,7 @@ app.use('/api/v1/auth/', authLimiter);
 // ─── Body Parsing ───────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ─── Logging ────────────────────────────────────────────────────
 if (process.env.NODE_ENV === 'development' || process.env.LOG_HTTP === 'true') {

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduPlatform Full Beginner Notes - File by File + Role Flows</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #1d4ed8;
+      --border: #dbe3ef;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --ok: #166534;
+      --warn: #92400e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #e9f1ff 0%, #f3f8ff 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    h1, h2, h3, h4 {
+      margin-top: 0;
+      color: #0f172a;
+    }
+
+    h2 {
+      margin-top: 26px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    code {
+      background: #ecf2ff;
+      color: #1e3a8a;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 12px;
+      overflow: auto;
+      border: 1px solid #1e293b;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1e3a8a;
+      font-weight: 700;
+      font-size: 12px;
+      margin: 2px 6px 2px 0;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef4ff;
+    }
+
+    .small { font-size: 13px; color: var(--muted); }
+    .ok { color: var(--ok); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+
+    details {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      margin-bottom: 10px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .flow-step {
+      border-left: 4px solid #93c5fd;
+      background: #f8fbff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>EduPlatform: Complete Beginner Notes (Every File + Student/Instructor/Admin Flow)</h1>
+      <p><strong>Goal of this note:</strong> Make the full project easy to understand even if you are new to MERN.</p>
+      <div>
+        <span class="pill">React</span>
+        <span class="pill">Redux Toolkit</span>
+        <span class="pill">Node.js + Express</span>
+        <span class="pill">MongoDB + Mongoose</span>
+        <span class="pill">JWT Auth</span>
+        <span class="pill">Stripe</span>
+        <span class="pill">Socket.io</span>
+      </div>
+      <p class="small" style="margin-top:10px;">
+        <strong>Easy memory:</strong> Frontend page -> API call -> Route -> Controller -> Model -> MongoDB -> JSON response -> Redux -> UI update.
+      </p>
+    </section>
+
+    <section>
+      <h2>1. Project in Very Simple Words</h2>
+      <div class="card">
+        <ul>
+          <li><strong>Student side:</strong> register, login, browse courses, enroll, watch lessons, take quizzes, submit assignments, ask questions, review course, download certificate.</li>
+          <li><strong>Instructor side:</strong> create course, add lessons, add quiz, create assignments, answer student questions, submit course for admin approval.</li>
+          <li><strong>Admin side:</strong> approve/reject courses, manage users, view full platform analytics, delete bad users/courses.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Architecture Map</h2>
+      <div class="card">
+        <pre><code>client (React + Redux)
+  |-- Pages (UI)
+  |-- API (Axios with token)
+  |-- Slices (state management)
+        |
+        v
+server (Express)
+  |-- routes/ (URL mapping)
+  |-- middleware/ (auth, errors, uploads)
+  |-- controllers/ (business logic)
+  |-- services/ (helper domain logic)
+  |-- models/ (MongoDB schemas)
+        |
+        v
+MongoDB (actual data)</code></pre>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. File-by-File Explanation (Full Project)</h2>
+
+      <details open>
+        <summary>Root-level files</summary>
+        <table>
+          <tr><th>File</th><th>What it does</th><th>Why it matters</th></tr>
+          <tr><td><code>README.md</code></td><td>Main project documentation (features, stack, setup, endpoints).</td><td>First file to understand project quickly.</td></tr>
+          <tr><td><code>DEPLOYMENT.md</code></td><td>Deployment and CI/CD guide.</td><td>Helps move project to production.</td></tr>
+          <tr><td><code>.gitignore</code></td><td>Ignored files list.</td><td>Prevents secrets and heavy files from git.</td></tr>
+        </table>
+      </details>
+
+      <details open>
+        <summary>.github files</summary>
+        <table>
+          <tr><th>File</th><th>Purpose</th><th>Notes</th></tr>
+          <tr><td><code>.github/workflows/backend.yml</code></td><td>Backend CI: install, lint, test, build.</td><td>Checks backend quality on push to <code>main</code>.</td></tr>
+          <tr><td><code>.github/workflows/frontend.yml</code></td><td>Frontend CI: install and build.</td><td>Ensures frontend can compile.</td></tr>
+          <tr><td><code>.github/index.html</code></td><td>This notes file.</td><td>Your learning reference.</td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Server: Entry + Config</summary>
+        <table>
+          <tr><th>File</th><th>Purpose</th><th>Key code idea</th></tr>
+          <tr><td><code>server/server.js</code></td><td>Starts app, middleware, routes, socket, DB.</td><td><code>app.use('/api/v1/...')</code> + <code>connectDB()</code> + <code>initSocket(server)</code>.</td></tr>
+          <tr><td><code>server/config/db.js</code></td><td>MongoDB connect with retry and listeners.</td><td><code>mongoose.connect(MONGO_URI)</code>.</td></tr>
+          <tr><td><code>server/config/cloudinary.js</code></td><td>Cloudinary credentials setup.</td><td>Used for media uploads.</td></tr>
+          <tr><td><code>server/config/stripe.js</code></td><td>Stripe SDK init.</td><td>Used by payment controller.</td></tr>
+          <tr><td><code>server/.env.example</code></td><td>Backend env template.</td><td>Documents required secrets.</td></tr>
+          <tr><td><code>server/package.json</code></td><td>Backend scripts + dependencies.</td><td><code>dev</code>, <code>test</code>, <code>lint</code>, <code>start</code>.</td></tr>
+          <tr><td><code>server/Dockerfile</code></td><td>Container image setup for backend.</td><td>Runs <code>npm start</code> on port 5000.</td></tr>
+          <tr><td><code>server/seed.js</code></td><td>Seeds demo users/courses/lessons/etc.</td><td>Useful for fast testing/demo data.</td></tr>
+          <tr><td><code>server/uploads/documents/...</code></td><td>Sample uploaded assignment document.</td><td>Shows local upload output.</td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Server: Middleware + Utils + Socket + Services + Tests</summary>
+        <table>
+          <tr><th>File</th><th>Purpose</th><th>Important logic</th></tr>
+          <tr><td><code>server/middleware/auth.js</code></td><td>Auth + RBAC middleware.</td><td>Reads JWT from <code>Authorization</code>, sets <code>req.user</code>, validates role.</td></tr>
+          <tr><td><code>server/middleware/errorHandler.js</code></td><td>Unified API error response.</td><td>Handles validation, duplicate key, cast, JWT errors.</td></tr>
+          <tr><td><code>server/middleware/upload.js</code></td><td>Multer config for image/video/document uploads.</td><td>Cloudinary for media, local disk for documents.</td></tr>
+          <tr><td><code>server/utils/helpers.js</code></td><td><code>asyncHandler</code> and <code>ApiError</code>.</td><td>Cleaner controller code, central error style.</td></tr>
+          <tr><td><code>server/utils/validators.js</code></td><td>Request body validation rules.</td><td>Auth/course/quiz/review validators.</td></tr>
+          <tr><td><code>server/socket/socket.js</code></td><td>Socket.io server + token auth + user rooms.</td><td>Push notification events to <code>user:{id}</code> room.</td></tr>
+          <tr><td><code>server/services/certificateEligibility.js</code></td><td>Checks lessons + quizzes completion.</td><td>Single source of certificate truth.</td></tr>
+          <tr><td><code>server/services/courseModeration.js</code></td><td>AI + heuristic legitimacy review for courses.</td><td>Supports admin moderation.</td></tr>
+          <tr><td><code>server/services/notification.js</code></td><td>Create DB notification + send socket event.</td><td>Persists + real-time both.</td></tr>
+          <tr><td><code>server/services/recommendation.js</code></td><td>Category/tag based recommendation scoring.</td><td>Content-based ranking logic.</td></tr>
+          <tr><td><code>server/tests/helpers.test.js</code></td><td>Tests helper utilities.</td><td>Checks <code>ApiError</code>, <code>asyncHandler</code>.</td></tr>
+          <tr><td><code>server/tests/errorHandler.test.js</code></td><td>Tests error middleware cases.</td><td>Validation, duplicate key, cast, JWT.</td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Server: Route files (URL to Controller mapping)</summary>
+        <table>
+          <tr><th>File</th><th>Main endpoints</th><th>Purpose</th></tr>
+          <tr><td><code>server/routes/authRoutes.js</code></td><td><code>/register</code>, <code>/login</code>, <code>/me</code></td><td>Authentication and profile.</td></tr>
+          <tr><td><code>server/routes/courseRoutes.js</code></td><td><code>/</code>, <code>/:id</code>, <code>/my-courses</code>, nested subroutes</td><td>Main course APIs + nested lessons/quizzes/reviews/questions/assignments.</td></tr>
+          <tr><td><code>server/routes/lessonRoutes.js</code></td><td><code>/</code>, <code>/:id</code>, <code>/:id/ai-tutor</code></td><td>Lesson CRUD and AI tutor.</td></tr>
+          <tr><td><code>server/routes/quizRoutes.js</code></td><td><code>/</code>, <code>/generate</code>, <code>/:id/attempt</code></td><td>Quiz create/read/attempt.</td></tr>
+          <tr><td><code>server/routes/reviewRoutes.js</code></td><td><code>/</code></td><td>Add/get course reviews.</td></tr>
+          <tr><td><code>server/routes/enrollmentRoutes.js</code></td><td><code>/</code>, <code>/my</code>, <code>/:id/progress</code>, certificate</td><td>Enroll and progress APIs.</td></tr>
+          <tr><td><code>server/routes/paymentRoutes.js</code></td><td><code>/create-checkout</code>, <code>/verify/:sessionId</code></td><td>Stripe flow.</td></tr>
+          <tr><td><code>server/routes/bookmarkRoutes.js</code></td><td><code>/:courseId</code>, <code>/</code></td><td>Bookmark toggle/list.</td></tr>
+          <tr><td><code>server/routes/questionRoutes.js</code></td><td><code>/</code>, <code>/my</code>, <code>/instructor</code>, <code>/:id/answer</code></td><td>Student-instructor Q&amp;A.</td></tr>
+          <tr><td><code>server/routes/assignmentRoutes.js</code></td><td><code>/</code>, <code>/:assignmentId/submissions</code></td><td>Assignment CRUD/submission.</td></tr>
+          <tr><td><code>server/routes/notificationRoutes.js</code></td><td><code>/</code>, <code>/read-all</code>, <code>/:id/read</code></td><td>Notification inbox actions.</td></tr>
+          <tr><td><code>server/routes/adminRoutes.js</code></td><td><code>/users</code>, <code>/courses/pending</code>, <code>/analytics</code></td><td>Admin actions.</td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Server: Controller files (Business logic)</summary>
+        <table>
+          <tr><th>File</th><th>What it handles</th><th>Core functions</th></tr>
+          <tr><td><code>server/controllers/authController.js</code></td><td>Register/login/get/update profile.</td><td><code>register</code>, <code>login</code>, <code>getMe</code>, <code>updateMe</code></td></tr>
+          <tr><td><code>server/controllers/courseController.js</code></td><td>Course listing/detail/CRUD/recommendations/analytics.</td><td><code>getCourses</code>, <code>getCourse</code>, <code>createCourse</code>, <code>submitCourse</code>, <code>getRecommendations</code></td></tr>
+          <tr><td><code>server/controllers/lessonController.js</code></td><td>Lesson CRUD + AI tutor fallback flow.</td><td><code>addLesson</code>, <code>updateLesson</code>, <code>deleteLesson</code>, <code>askAITutor</code></td></tr>
+          <tr><td><code>server/controllers/enrollmentController.js</code></td><td>Enroll/progress/certificate/student analytics.</td><td><code>enroll</code>, <code>updateProgress</code>, <code>getCertificate</code>, <code>restartCourse</code></td></tr>
+          <tr><td><code>server/controllers/quizController.js</code></td><td>Quiz create/read/attempt/AI generation.</td><td><code>createQuiz</code>, <code>getQuiz</code>, <code>submitAttempt</code>, <code>generateAIQuiz</code></td></tr>
+          <tr><td><code>server/controllers/reviewController.js</code></td><td>Review add/list and rating recalculation.</td><td><code>addReview</code>, <code>getReviews</code></td></tr>
+          <tr><td><code>server/controllers/paymentController.js</code></td><td>Stripe checkout + verify + auto-enroll.</td><td><code>createCheckout</code>, <code>verifyPayment</code></td></tr>
+          <tr><td><code>server/controllers/bookmarkController.js</code></td><td>Bookmark toggle/get.</td><td><code>toggleBookmark</code>, <code>getBookmarks</code></td></tr>
+          <tr><td><code>server/controllers/questionController.js</code></td><td>Ask question, list questions, answer question.</td><td><code>askQuestion</code>, <code>getStudentQuestions</code>, <code>getInstructorQuestions</code>, <code>answerQuestion</code></td></tr>
+          <tr><td><code>server/controllers/assignmentController.js</code></td><td>Assignments + submissions workflow.</td><td><code>createAssignment</code>, <code>submitAssignment</code>, <code>getAssignmentSubmissions</code></td></tr>
+          <tr><td><code>server/controllers/notificationController.js</code></td><td>Notification fetch/read actions.</td><td><code>getNotifications</code>, <code>markAsRead</code>, <code>markAllAsRead</code></td></tr>
+          <tr><td><code>server/controllers/adminController.js</code></td><td>User admin + course moderation + analytics.</td><td><code>getUsers</code>, <code>updateCourseStatus</code>, <code>deleteCourse</code>, <code>getAnalytics</code></td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Server: Model files (MongoDB schema layer)</summary>
+        <table>
+          <tr><th>File</th><th>Stores</th><th>Important fields</th></tr>
+          <tr><td><code>server/models/User.js</code></td><td>User account and role data.</td><td><code>name,email,password,role,bookmarks</code> + password hash + JWT methods.</td></tr>
+          <tr><td><code>server/models/Course.js</code></td><td>Course metadata and status.</td><td><code>title,description,category,price,instructor,lessons,status,avgRating,totalStudents</code></td></tr>
+          <tr><td><code>server/models/Lesson.js</code></td><td>Course lessons.</td><td><code>course,title,videoUrl,order,content,isFreePreview</code></td></tr>
+          <tr><td><code>server/models/Enrollment.js</code></td><td>Student enrollment and progress.</td><td><code>student,course,progress[],completionPercentage,completedAt</code></td></tr>
+          <tr><td><code>server/models/Quiz.js</code></td><td>Quiz definitions.</td><td><code>course,title,questions[],passingScore</code></td></tr>
+          <tr><td><code>server/models/QuizAttempt.js</code></td><td>Quiz attempts per student.</td><td><code>student,quiz,answers,score,passed</code></td></tr>
+          <tr><td><code>server/models/Review.js</code></td><td>Course reviews.</td><td><code>student,course,rating,comment</code> unique by student+course.</td></tr>
+          <tr><td><code>server/models/Payment.js</code></td><td>Stripe transaction tracking.</td><td><code>student,course,amount,stripeSessionId,status</code></td></tr>
+          <tr><td><code>server/models/Notification.js</code></td><td>Notification history.</td><td><code>user,message,type,read,link</code></td></tr>
+          <tr><td><code>server/models/Assignment.js</code></td><td>Assignment posted by instructor.</td><td><code>course,instructor,title,description,fileUrl,dueDate</code></td></tr>
+          <tr><td><code>server/models/AssignmentSubmission.js</code></td><td>Student assignment submissions.</td><td><code>assignment,course,student,fileUrl,notes</code></td></tr>
+          <tr><td><code>server/models/Question.js</code></td><td>Student questions and instructor answers.</td><td><code>course,lesson,student,instructor,question,answer,status</code></td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Client: Core app files</summary>
+        <table>
+          <tr><th>File</th><th>Purpose</th><th>Key point</th></tr>
+          <tr><td><code>client/src/main.jsx</code></td><td>React app entry point.</td><td>Renders <code>&lt;App /&gt;</code>.</td></tr>
+          <tr><td><code>client/src/App.jsx</code></td><td>All route definitions + layout.</td><td>Uses <code>ProtectedRoute</code> by role.</td></tr>
+          <tr><td><code>client/src/api/index.js</code></td><td>Axios config and interceptors.</td><td>Auto-attaches JWT and handles 401 logout.</td></tr>
+          <tr><td><code>client/src/app/store.js</code></td><td>Redux store setup.</td><td>Registers <code>auth</code>, <code>courses</code>, <code>enrollments</code> reducers.</td></tr>
+          <tr><td><code>client/src/socket.js</code></td><td>Socket.io client connector.</td><td>Connects using token.</td></tr>
+          <tr><td><code>client/src/index.css</code></td><td>Main design system CSS.</td><td>Colors, components, utility classes, responsive styles.</td></tr>
+          <tr><td><code>client/src/App.css</code></td><td>Vite starter styles (legacy/minor).</td><td>Not core to main UI now.</td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Client: Redux files</summary>
+        <table>
+          <tr><th>File</th><th>What state it manages</th><th>Main thunks/actions</th></tr>
+          <tr><td><code>client/src/features/authSlice.js</code></td><td>User auth/session.</td><td><code>register</code>, <code>login</code>, <code>getMe</code>, <code>logout</code>, <code>clearError</code></td></tr>
+          <tr><td><code>client/src/features/courseSlice.js</code></td><td>Course catalog/current/my/recommendations.</td><td><code>fetchCourses</code>, <code>fetchCourse</code>, <code>fetchMyCourses</code>, <code>fetchRecommendations</code></td></tr>
+          <tr><td><code>client/src/features/enrollmentSlice.js</code></td><td>Enrollments and progress.</td><td><code>fetchMyEnrollments</code>, <code>enrollInCourse</code>, <code>updateProgress</code></td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Client: Components + Hooks + Utils</summary>
+        <table>
+          <tr><th>File</th><th>Purpose</th><th>How used</th></tr>
+          <tr><td><code>client/src/components/Navbar.jsx</code></td><td>Top navigation, theme toggle, unread count.</td><td>Visible on all pages.</td></tr>
+          <tr><td><code>client/src/components/Footer.jsx</code></td><td>Footer links and branding.</td><td>Visible on all pages.</td></tr>
+          <tr><td><code>client/src/components/ProtectedRoute.jsx</code></td><td>Protect routes by auth + role.</td><td>Used in <code>App.jsx</code>.</td></tr>
+          <tr><td><code>client/src/components/CourseCard.jsx</code></td><td>Reusable course card with bookmark.</td><td>Used in Home/Courses/Student dashboard recommendation.</td></tr>
+          <tr><td><code>client/src/components/LoadingSpinner.jsx</code></td><td>Loader + skeleton helpers.</td><td>Shown while API data loads.</td></tr>
+          <tr><td><code>client/src/hooks/useDarkMode.js</code></td><td>Dark mode toggle with localStorage.</td><td>Used by Navbar.</td></tr>
+          <tr><td><code>client/src/utils/categoryThumbnails.js</code></td><td>Fallback gradient/icon mapping per category.</td><td>Used by CourseCard thumbnails.</td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Client: Page files</summary>
+        <table>
+          <tr><th>File</th><th>Main purpose</th><th>Important API interactions</th></tr>
+          <tr><td><code>client/src/pages/Home.jsx</code></td><td>Landing page + featured courses.</td><td><code>fetchCourses({limit:8})</code></td></tr>
+          <tr><td><code>client/src/pages/Courses.jsx</code></td><td>Course listing with filters/search/sort/pagination.</td><td><code>fetchCourses(params)</code></td></tr>
+          <tr><td><code>client/src/pages/CourseDetail.jsx</code></td><td>Single course detail + enroll/purchase.</td><td><code>/courses/:id</code>, <code>/enrollments</code>, <code>/payments/create-checkout</code>, <code>/reviews</code></td></tr>
+          <tr><td><code>client/src/pages/CoursePlayer.jsx</code></td><td>Student learning player.</td><td>Loads course+enrollment+quizzes+questions+assignments+reviews and supports progress updates.</td></tr>
+          <tr><td><code>client/src/pages/Login.jsx</code></td><td>Login screen.</td><td><code>dispatch(login())</code></td></tr>
+          <tr><td><code>client/src/pages/Register.jsx</code></td><td>Registration screen with role choose.</td><td><code>dispatch(register())</code></td></tr>
+          <tr><td><code>client/src/pages/StudentDashboard.jsx</code></td><td>Student stats, my courses, recommendations.</td><td><code>/enrollments/analytics</code>, <code>fetchMyEnrollments</code>, <code>fetchRecommendations</code></td></tr>
+          <tr><td><code>client/src/pages/InstructorDashboard.jsx</code></td><td>Instructor summary and course create/manage.</td><td><code>/courses</code> create/update/delete/submit, <code>/courses/instructor-analytics</code></td></tr>
+          <tr><td><code>client/src/pages/InstructorCourseEditor.jsx</code></td><td>Detailed course editor panel.</td><td>Lessons/quizzes/assignments/questions endpoints under <code>/courses/:id/*</code></td></tr>
+          <tr><td><code>client/src/pages/AdminDashboard.jsx</code></td><td>Admin users/courses moderation/analytics.</td><td><code>/admin/*</code> APIs + review/approve/reject flows.</td></tr>
+          <tr><td><code>client/src/pages/Notifications.jsx</code></td><td>User notification inbox.</td><td><code>/notifications</code>, mark read APIs.</td></tr>
+          <tr><td><code>client/src/pages/PaymentSuccess.jsx</code></td><td>Stripe callback verification page.</td><td><code>/payments/verify/:sessionId</code></td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Client: Build/config/public files</summary>
+        <table>
+          <tr><th>File</th><th>Purpose</th><th>Notes</th></tr>
+          <tr><td><code>client/package.json</code></td><td>Frontend scripts and dependencies.</td><td><code>dev/build/lint/preview</code>.</td></tr>
+          <tr><td><code>client/vite.config.js</code></td><td>Vite setup + backend proxy.</td><td><code>/api -> localhost:5000</code> in dev.</td></tr>
+          <tr><td><code>client/eslint.config.js</code></td><td>Linting rules.</td><td>Code quality checks.</td></tr>
+          <tr><td><code>client/.env.example</code></td><td>Frontend env template.</td><td><code>VITE_API_URL</code>, optional <code>VITE_SOCKET_URL</code>.</td></tr>
+          <tr><td><code>client/index.html</code></td><td>Root HTML for Vite app.</td><td>Mount point for React.</td></tr>
+          <tr><td><code>client/README.md</code></td><td>Vite starter docs.</td><td>Template notes.</td></tr>
+          <tr><td><code>client/copy-images.cjs</code></td><td>Script to copy category images into public.</td><td>Utility script, not runtime app logic.</td></tr>
+          <tr><td><code>client/public/favicon.svg</code></td><td>Browser tab icon.</td><td>Branding asset.</td></tr>
+          <tr><td><code>client/public/icons.svg</code></td><td>SVG icons sprite/asset.</td><td>UI asset file.</td></tr>
+          <tr><td><code>client/src/assets/*</code></td><td>Image assets (hero/react/vite).</td><td>Visual resources.</td></tr>
+        </table>
+      </details>
+
+      <details>
+        <summary>Lock files and generated/support files</summary>
+        <table>
+          <tr><th>File</th><th>Purpose</th></tr>
+          <tr><td><code>client/package-lock.json</code></td><td>NPM exact dependency lock for frontend.</td></tr>
+          <tr><td><code>server/package-lock.json</code></td><td>NPM exact dependency lock for backend.</td></tr>
+        </table>
+      </details>
+    </section>
+
+    <section>
+      <h2>4. Core Code Understanding (Beginner)</h2>
+
+      <div class="card">
+        <h3>A) JWT auth middleware (why private APIs are secure)</h3>
+        <pre><code>// server/middleware/auth.js
+const authHeader = req.headers.authorization;
+if (!authHeader || !authHeader.startsWith('Bearer ')) return 401;
+const token = authHeader.split(' ')[1];
+const decoded = jwt.verify(token, process.env.JWT_SECRET);
+const user = await User.findById(decoded.id);
+req.user = user;</code></pre>
+        <ul>
+          <li>Reads token from request header.</li>
+          <li>Verifies token is real and not tampered.</li>
+          <li>Loads user and attaches to <code>req.user</code>.</li>
+          <li>Now controller knows who is calling API.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>B) Axios interceptor (frontend sends token automatically)</h3>
+        <pre><code>// client/src/api/index.js
+API.interceptors.request.use((config) =&gt; {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});</code></pre>
+        <p>So you do not manually add token in every API call.</p>
+      </div>
+
+      <div class="card">
+        <h3>C) Enrollment progress and certificate logic</h3>
+        <pre><code>// server/controllers/enrollmentController.js (simplified)
+lessonProgress.completed = true;
+enrollment.completionPercentage = ...;
+const eligibility = await evaluateEnrollmentCertificateEligibility(...);
+if (eligibility.eligible) enrollment.completedAt = new Date();</code></pre>
+        <p>
+          Certificate is unlocked only when lessons are done <strong>and</strong> required quizzes are passed.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>5. Student Module Flow (Exact Files + APIs)</h2>
+
+      <div class="flow-step">
+        <h3>Step 1: Student registers or logs in</h3>
+        <p><strong>Frontend files:</strong> <code>client/src/pages/Register.jsx</code>, <code>client/src/pages/Login.jsx</code>, <code>client/src/features/authSlice.js</code></p>
+        <p><strong>Backend files:</strong> <code>server/routes/authRoutes.js</code> -> <code>server/controllers/authController.js</code> -> <code>server/models/User.js</code></p>
+        <p><strong>Endpoints:</strong> <code>POST /api/v1/auth/register</code>, <code>POST /api/v1/auth/login</code></p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 2: Student browses courses</h3>
+        <p><strong>Frontend:</strong> <code>Home.jsx</code>, <code>Courses.jsx</code>, <code>CourseCard.jsx</code>, <code>courseSlice.js</code></p>
+        <p><strong>Backend:</strong> <code>courseRoutes.js</code> -> <code>courseController.getCourses</code> -> <code>Course</code> model</p>
+        <p><strong>Endpoint:</strong> <code>GET /api/v1/courses</code></p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 3: Student enrolls (free) or pays (paid)</h3>
+        <p><strong>Frontend:</strong> <code>CourseDetail.jsx</code>, <code>enrollmentSlice.js</code>, <code>PaymentSuccess.jsx</code></p>
+        <p><strong>Backend free path:</strong> <code>enrollmentRoutes.js</code> -> <code>enrollmentController.enroll</code></p>
+        <p><strong>Backend paid path:</strong> <code>paymentRoutes.js</code> -> <code>paymentController.createCheckout</code> -> Stripe -> <code>verifyPayment</code> auto-enroll</p>
+        <p><strong>Endpoints:</strong> <code>POST /enrollments</code>, <code>POST /payments/create-checkout</code>, <code>GET /payments/verify/:sessionId</code></p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 4: Student learns in Course Player</h3>
+        <p><strong>Frontend:</strong> <code>CoursePlayer.jsx</code></p>
+        <p><strong>Backend APIs used:</strong></p>
+        <ul>
+          <li><code>GET /courses/:id</code> (course + lessons)</li>
+          <li><code>GET /enrollments/my</code> (student enrollments/progress)</li>
+          <li><code>PUT /enrollments/:id/progress</code> (mark lesson complete)</li>
+          <li><code>GET /courses/:courseId/quizzes</code> + <code>POST /attempt</code></li>
+          <li><code>GET /enrollments/:id/certificate</code> and download endpoint</li>
+        </ul>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 5: Student does engagement actions</h3>
+        <ul>
+          <li><strong>Bookmark:</strong> <code>CourseCard.jsx</code> -> <code>bookmarkRoutes/controller</code></li>
+          <li><strong>Review:</strong> <code>CourseDetail.jsx</code> / <code>CoursePlayer.jsx</code> -> <code>reviewRoutes/controller</code></li>
+          <li><strong>Ask question:</strong> <code>CoursePlayer.jsx</code> -> <code>questionRoutes/controller</code></li>
+          <li><strong>Assignments:</strong> <code>CoursePlayer.jsx</code> -> <code>assignmentRoutes/controller</code></li>
+          <li><strong>Notifications:</strong> <code>Notifications.jsx</code> -> <code>notificationRoutes/controller</code></li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>6. Instructor Module Flow (Exact Files + APIs)</h2>
+
+      <div class="flow-step">
+        <h3>Step 1: Instructor creates course</h3>
+        <p><strong>Frontend:</strong> <code>InstructorDashboard.jsx</code> form submits <code>POST /courses</code></p>
+        <p><strong>Backend:</strong> <code>courseRoutes.js</code> (instructor role) -> <code>courseController.createCourse</code> -> <code>Course</code> model</p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 2: Instructor edits full course content</h3>
+        <p><strong>Frontend:</strong> <code>InstructorCourseEditor.jsx</code></p>
+        <p><strong>Backend areas:</strong></p>
+        <ul>
+          <li>Lessons: <code>lessonRoutes.js</code> -> <code>lessonController</code></li>
+          <li>Quizzes: <code>quizRoutes.js</code> -> <code>quizController</code></li>
+          <li>Assignments: <code>assignmentRoutes.js</code> -> <code>assignmentController</code></li>
+          <li>Questions answers: <code>questionRoutes.js</code> -> <code>questionController.answerQuestion</code></li>
+        </ul>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 3: Instructor submits course for review</h3>
+        <p><strong>Frontend:</strong> <code>InstructorDashboard.jsx</code> submit button</p>
+        <p><strong>Backend:</strong> <code>PUT /courses/:id/submit</code> -> <code>courseController.submitCourse</code> (status changes to <code>pending</code>)</p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 4: Instructor tracks analytics and feedback</h3>
+        <p><strong>Frontend:</strong> <code>InstructorDashboard.jsx</code> (analytics API), <code>InstructorCourseEditor.jsx</code> (questions/submissions)</p>
+        <p><strong>Backend:</strong> <code>getInstructorAnalytics</code> in <code>courseController</code>, question/assignment controllers.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>7. Admin Module Flow (Exact Files + APIs)</h2>
+
+      <div class="flow-step">
+        <h3>Step 1: Admin opens dashboard and sees platform analytics</h3>
+        <p><strong>Frontend:</strong> <code>AdminDashboard.jsx</code></p>
+        <p><strong>Backend:</strong> <code>GET /admin/analytics</code> -> <code>adminController.getAnalytics</code></p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 2: Admin reviews pending courses</h3>
+        <p><strong>Frontend:</strong> <code>AdminDashboard.jsx</code> review panel</p>
+        <p><strong>Backend:</strong> <code>GET /admin/courses/pending</code> + <code>GET /admin/courses/:id/review</code></p>
+        <p>Review endpoint uses <code>courseModeration.js</code> to get AI legitimacy suggestions.</p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 3: Admin approves or rejects course</h3>
+        <p><strong>Backend:</strong> <code>PUT /admin/courses/:id/status</code> -> <code>adminController.updateCourseStatus</code></p>
+        <p>It updates course status and creates notification to instructor.</p>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 4: Admin manages users</h3>
+        <ul>
+          <li><code>GET /admin/users</code> list users</li>
+          <li><code>PUT /admin/users/:id/role</code> change role</li>
+          <li><code>DELETE /admin/users/:id</code> remove user</li>
+        </ul>
+      </div>
+
+      <div class="flow-step">
+        <h3>Step 5: Admin can delete harmful courses deeply</h3>
+        <p><code>adminController.deleteCourse</code> removes linked lessons, enrollments, reviews, payments, quizzes, attempts, assignments, questions, bookmarks references.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>8. End-to-End Request Example (One Real Journey)</h2>
+      <div class="card">
+        <h3>Example: Student marks lesson complete</h3>
+        <ol>
+          <li><strong>UI click:</strong> <code>CoursePlayer.jsx</code> button <code>markLessonComplete()</code>.</li>
+          <li><strong>API request:</strong> <code>PUT /api/v1/enrollments/:id/progress</code> with <code>{ lessonId }</code>.</li>
+          <li><strong>Route:</strong> <code>server/routes/enrollmentRoutes.js</code>.</li>
+          <li><strong>Auth middleware:</strong> validates JWT and role <code>student</code>.</li>
+          <li><strong>Controller:</strong> <code>updateProgress</code> in <code>enrollmentController.js</code>.</li>
+          <li><strong>Model updates:</strong> <code>Enrollment</code> progress array and completion %.</li>
+          <li><strong>Service check:</strong> <code>certificateEligibility.js</code> decides if certificate unlocked.</li>
+          <li><strong>Response:</strong> updated enrollment JSON sent back.</li>
+          <li><strong>Frontend refresh:</strong> <code>loadData()</code> reloads and UI shows new progress.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section>
+      <h2>9. Beginner Revision Plan (What to Study First)</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3>Week 1 (Must know)</h3>
+          <ul>
+            <li>Read <code>server/server.js</code> fully.</li>
+            <li>Understand <code>auth.js</code> middleware.</li>
+            <li>Understand route -> controller -> model flow using one feature (login).</li>
+            <li>Understand <code>client/src/api/index.js</code> and one slice (<code>authSlice.js</code>).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Week 2 (Role flows)</h3>
+          <ul>
+            <li>Student flow: CourseDetail -> Enrollment -> CoursePlayer.</li>
+            <li>Instructor flow: InstructorDashboard -> InstructorCourseEditor.</li>
+            <li>Admin flow: AdminDashboard -> moderation endpoints.</li>
+            <li>Payments and notifications basics.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="ok">If you can explain one full flow (with file names and endpoints), you are interview-ready for beginner/full-stack intern level.</p>
+        <p class="warn">Do not memorize everything at once. Learn one module at a time and map it to files.</p>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

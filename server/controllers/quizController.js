@@ -5,6 +5,7 @@ const Course = require('../models/Course');
 const Notification = require('../models/Notification');
 const { asyncHandler, ApiError } = require('../utils/helpers');
 const { GoogleGenAI } = require('@google/genai');
+const { evaluateEnrollmentCertificateEligibility } = require('../services/certificateEligibility');
 
 /**
  * @desc    Create a quiz for a course
@@ -69,6 +70,32 @@ const getQuiz = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Delete quiz for a course
+ * @route   DELETE /api/v1/courses/:courseId/quizzes/:id
+ * @access  Instructor (owner)
+ */
+const deleteQuiz = asyncHandler(async (req, res) => {
+  const course = await Course.findById(req.params.courseId);
+  if (!course) throw new ApiError('Course not found', 404);
+  if (course.instructor.toString() !== req.user._id.toString()) {
+    throw new ApiError('Not authorized', 403);
+  }
+
+  const quiz = await Quiz.findOne({ _id: req.params.id, course: course._id });
+  if (!quiz) throw new ApiError('Quiz not found', 404);
+
+  await Promise.all([
+    QuizAttempt.deleteMany({ quiz: quiz._id }),
+    Quiz.findByIdAndDelete(quiz._id),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: 'Quiz deleted successfully',
+  });
+});
+
+/**
  * @desc    Submit a quiz attempt
  * @route   POST /api/v1/courses/:courseId/quizzes/:id/attempt
  * @access  Enrolled Student
@@ -111,6 +138,41 @@ const submitAttempt = asyncHandler(async (req, res) => {
     totalCorrect,
     totalQuestions,
   });
+
+  // Refresh enrollment completion when quiz is passed, because certificate
+  // eligibility requires both lessons completion and quiz completion.
+  if (passed) {
+    const enrollmentForCourse = await Enrollment.findOne({
+      student: req.user._id,
+      course: req.params.courseId,
+    });
+
+    if (enrollmentForCourse) {
+      const totalLessons = enrollmentForCourse.progress.length;
+      const completedLessons = enrollmentForCourse.progress.filter((p) => p.completed).length;
+      enrollmentForCourse.completionPercentage = totalLessons
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0;
+
+      const eligibility = await evaluateEnrollmentCertificateEligibility({
+        courseId: req.params.courseId,
+        studentId: req.user._id,
+        progress: enrollmentForCourse.progress,
+      });
+
+      if (eligibility.eligible && !enrollmentForCourse.completedAt) {
+        enrollmentForCourse.completedAt = new Date();
+        await Notification.create({
+          user: req.user._id,
+          message: `Great work! You've completed all lessons and quizzes. Your certificate is ready!`,
+          type: 'general',
+          link: `/student/enrollments/${enrollmentForCourse._id}/certificate`,
+        });
+      }
+
+      await enrollmentForCourse.save();
+    }
+  }
 
   // Notify student about result
   await Notification.create({
@@ -227,4 +289,4 @@ Do not include markdown formatting or backticks, return ONLY raw JSON.`;
   }
 });
 
-module.exports = { createQuiz, getQuizzes, getQuiz, submitAttempt, generateAIQuiz };
+module.exports = { createQuiz, getQuizzes, getQuiz, deleteQuiz, submitAttempt, generateAIQuiz };

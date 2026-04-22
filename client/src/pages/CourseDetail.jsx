@@ -17,12 +17,21 @@ const CourseDetail = () => {
   const [enrolling, setEnrolling] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => { dispatch(fetchCourse(id)); }, [dispatch, id]);
 
   useEffect(() => {
     if (course) {
-      API.get(`/courses/${id}/reviews`).then(r => setReviews(r.data.data.reviews)).catch(() => {});
+      API.get(`/courses/${id}/reviews`).then(r => {
+        const fetched = r.data.data.reviews;
+        setReviews(fetched);
+        if (user?.role === 'student' && user?._id) {
+          setHasReviewed(fetched.some((item) => item.student?._id === user._id));
+        }
+      }).catch(() => {});
       if (user?.role === 'student') {
         API.get('/enrollments/my').then(r => {
           const e = r.data.data.enrollments.find(e => e.course?._id === id);
@@ -31,6 +40,29 @@ const CourseDetail = () => {
       }
     }
   }, [course, id, user]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await API.post(`/courses/${id}/reviews`, {
+        rating: Number(reviewForm.rating),
+        comment: reviewForm.comment,
+      });
+      const refreshed = await API.get(`/courses/${id}/reviews`);
+      const fetched = refreshed.data.data.reviews;
+      setReviews(fetched);
+      setHasReviewed(true);
+      setReviewForm({ rating: 5, comment: '' });
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to submit review');
+    }
+    setSubmittingReview(false);
+  };
 
   const handleEnroll = async () => {
     if (!user) return navigate('/login');
@@ -81,7 +113,7 @@ const CourseDetail = () => {
           </div>
 
           <p style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', marginBottom: 'var(--space-6)' }}>
-            Created by <strong style={{ color: 'var(--text-primary)' }}>{course.instructor?.name}</strong>
+            <strong style={{ color: 'var(--text-primary)' }}>{course.instructor?.name}</strong>
           </p>
 
           {/* Tabs */}
@@ -108,8 +140,11 @@ const CourseDetail = () => {
           {activeTab === 'curriculum' && (
             <div className="animate-fadeIn">
               <h3 style={{ fontWeight: 600, marginBottom: 'var(--space-4)', fontSize: '1.1rem' }}>
-                Course Content — {course.lessons?.length || 0} Lessons
+                Course Content — {course.lessons?.length || 0} Lessons • {course.totalQuizzes || 0} Quizzes
               </h3>
+              <p style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-4)', fontSize: '0.82rem' }}>
+                Video lectures: {course.lessons?.filter((lesson) => lesson.videoUrl).length || 0} • Total video minutes: {Math.round((course.duration || 0) / 60)} mins
+              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 {course.lessons?.map((lesson, i) => (
                   <div key={lesson._id} className="list-item" style={{ padding: 'var(--space-3) var(--space-4)' }}>
@@ -130,6 +165,31 @@ const CourseDetail = () => {
           {activeTab === 'reviews' && (
             <div className="animate-fadeIn">
               <h3 style={{ fontWeight: 600, marginBottom: 'var(--space-4)', fontSize: '1.1rem' }}>Student Reviews</h3>
+
+              {user?.role === 'student' && enrolled && !hasReviewed && (
+                <form onSubmit={handleReviewSubmit} className="card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+                  <h4 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Write a Review</h4>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--text-tertiary)' }}>Rating</label>
+                    <select value={reviewForm.rating} onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: Number(e.target.value) }))} className="input select" style={{ maxWidth: '120px' }}>
+                      {[5,4,3,2,1].map((r) => <option key={r} value={r}>{r} ★</option>)}
+                    </select>
+                  </div>
+                  <textarea
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm((prev) => ({ ...prev, comment: e.target.value }))}
+                    className="input"
+                    rows={4}
+                    required
+                    placeholder="Share your learning experience"
+                    style={{ marginBottom: 'var(--space-3)' }}
+                  />
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={submittingReview}>
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </form>
+              )}
+
               {reviews.length === 0 ? <p style={{ color: 'var(--text-tertiary)' }}>No reviews yet</p> :
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {reviews.map(r => (
@@ -194,6 +254,10 @@ const CourseDetail = () => {
                     <strong style={{ color: 'var(--text-primary)', fontSize: '0.85rem' }}>{value}</strong>
                   </div>
                 ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0' }}>
+                  <span style={{ color: 'var(--text-tertiary)' }}>Quizzes</span>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '0.85rem' }}>{course.totalQuizzes || 0}</strong>
+                </div>
               </div>
             </div>
           </div>

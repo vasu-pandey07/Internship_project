@@ -64,6 +64,11 @@ const courseSchema = new mongoose.Schema(
       enum: ['draft', 'pending', 'approved', 'rejected'],
       default: 'draft',
     },
+    rejectedReason: {
+      type: String,
+      default: '',
+      maxlength: [500, 'Rejected reason cannot exceed 500 characters'],
+    },
     avgRating: {
       type: Number,
       default: 0,

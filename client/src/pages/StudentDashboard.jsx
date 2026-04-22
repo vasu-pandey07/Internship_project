@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMyEnrollments } from '../features/enrollmentSlice';
 import { fetchRecommendations } from '../features/courseSlice';
@@ -6,20 +7,26 @@ import { Link } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { FiBookOpen, FiAward, FiTrendingUp, FiBookmark, FiArrowRight } from 'react-icons/fi';
+import API from '../api';
 
 const StudentDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((s) => s.auth);
   const { list: enrollments, loading } = useSelector((s) => s.enrollments);
   const { recommendations } = useSelector((s) => s.courses);
+  const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
     dispatch(fetchMyEnrollments());
     dispatch(fetchRecommendations());
+    API.get('/enrollments/analytics')
+      .then((res) => setAnalytics(res.data.data.analytics))
+      .catch(() => setAnalytics(null));
   }, [dispatch]);
 
-  const inProgress = enrollments.filter((e) => e.completionPercentage < 100);
-  const completed = enrollments.filter((e) => e.completionPercentage === 100);
+  const myCourses = enrollments;
+  const inProgress = enrollments.filter((e) => !e.certificateEligibility?.eligible);
+  const completed = enrollments.filter((e) => e.certificateEligibility?.eligible);
 
   if (loading) return <LoadingSpinner />;
 
@@ -40,10 +47,10 @@ const StudentDashboard = () => {
 
       {/* Stats */}
       <div className="grid-stats stagger" style={{ marginBottom: 'var(--space-10)' }}>
-        {statItems.map(({ icon: Icon, label, value, color }) => (
+        {statItems.map(({ icon, label, value, color }) => (
           <div key={label} className="stat-card">
             <div className="stat-icon" style={{ background: `${color}12` }}>
-              <Icon size={20} style={{ color }} />
+              {icon({ size: 20, style: { color } })}
             </div>
             <div>
               <div className="stat-value">{value}</div>
@@ -53,14 +60,14 @@ const StudentDashboard = () => {
         ))}
       </div>
 
-      {/* In-Progress Courses */}
-      {inProgress.length > 0 && (
+      {/* My Courses */}
+      {myCourses.length > 0 && (
         <section style={{ marginBottom: 'var(--space-10)' }}>
           <div className="section-header">
-            <h2>Continue Learning</h2>
+            <h2>My Courses</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {inProgress.map((e) => (
+            {myCourses.map((e) => (
               <Link key={e._id} to={`/student/courses/${e.course?._id}`} style={{ textDecoration: 'none' }}>
                 <div className="list-item">
                   <div className="list-thumb" style={{
@@ -72,6 +79,11 @@ const StudentDashboard = () => {
                     <div className="truncate-1" style={{ fontWeight: 600, fontSize: '0.92rem', marginBottom: '8px' }}>
                       {e.course?.title}
                     </div>
+                    <div style={{ marginBottom: '8px' }}>
+                      <span className={`badge ${e.certificateEligibility?.eligible ? 'badge-success' : 'badge-warning'}`}>
+                        {e.certificateEligibility?.eligible ? 'Completed' : 'In Progress'}
+                      </span>
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                       <div className="progress-bar" style={{ flex: 1 }}>
                         <div className="progress-fill" style={{ width: `${e.completionPercentage}%` }} />
@@ -81,6 +93,69 @@ const StudentDashboard = () => {
                       </span>
                     </div>
                   </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {analytics && (
+        <section style={{ marginBottom: 'var(--space-10)' }}>
+          <div className="section-header">
+            <h2>Personalized Analytics</h2>
+          </div>
+          <div className="grid-stats" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
+            <div className="stat-card">
+              <div>
+                <div className="stat-value">{analytics.completionRate}%</div>
+                <div className="stat-label">Lesson Completion</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div>
+                <div className="stat-value">{analytics.avgQuizScore}%</div>
+                <div className="stat-label">Avg Quiz Score</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div>
+                <div className="stat-value">{analytics.quizzesPassed}/{analytics.totalQuizzesRequired}</div>
+                <div className="stat-label">Quizzes Passed</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div>
+                <div className="stat-value">{analytics.quizzesAttempted}</div>
+                <div className="stat-label">Quizzes Attempted</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div>
+                <div className="stat-value">{analytics.certificatesReady}</div>
+                <div className="stat-label">Certificates Ready</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {completed.length > 0 && (
+        <section style={{ marginBottom: 'var(--space-10)' }}>
+          <div className="section-header">
+            <h2>Completed Courses</h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {completed.map((e) => (
+              <Link key={e._id} to={`/student/courses/${e.course?._id}`} style={{ textDecoration: 'none' }}>
+                <div className="list-item">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600 }}>{e.course?.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                      Certificate ready • Completed lessons: {e.certificateEligibility?.completedLessons}/{e.certificateEligibility?.totalLessons}
+                    </div>
+                  </div>
+                  <span className="badge badge-success">Ready</span>
                 </div>
               </Link>
             ))}

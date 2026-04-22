@@ -7,7 +7,11 @@ const Lesson = require('../models/Lesson');
 const Quiz = require('../models/Quiz');
 const QuizAttempt = require('../models/QuizAttempt');
 const Review = require('../models/Review');
+const Assignment = require('../models/Assignment');
+const AssignmentSubmission = require('../models/AssignmentSubmission');
+const Question = require('../models/Question');
 const { asyncHandler, ApiError } = require('../utils/helpers');
+const { evaluateCourseLegitimacy } = require('../services/courseModeration');
 
 /**
  * @desc    Get all users (paginated)
@@ -109,28 +113,62 @@ const getPendingCourses = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Get full course details + AI moderation review (admin)
+ * @route   GET /api/v1/admin/courses/:id/review
+ * @access  Admin
+ */
+const getCourseReview = asyncHandler(async (req, res) => {
+  const course = await Course.findById(req.params.id)
+    .populate('instructor', 'name email')
+    .populate({
+      path: 'lessons',
+      select: 'title order duration content isFreePreview videoUrl createdAt',
+      options: { sort: { order: 1 } },
+    });
+
+  if (!course) throw new ApiError('Course not found', 404);
+
+  const aiReview = await evaluateCourseLegitimacy(course, course.lessons || []);
+
+  res.status(200).json({
+    success: true,
+    data: { course, aiReview },
+  });
+});
+
+/**
  * @desc    Approve/Reject a course
  * @route   PUT /api/v1/admin/courses/:id/status
  * @access  Admin
  */
 const updateCourseStatus = asyncHandler(async (req, res) => {
-  const { status } = req.body;
+  const { status, reason } = req.body;
   if (!['approved', 'rejected'].includes(status)) {
     throw new ApiError('Status must be approved or rejected', 400);
   }
 
+  const normalizedReason = String(reason || '').trim();
+  const updatePayload = {
+    status,
+    rejectedReason: status === 'rejected' ? normalizedReason : '',
+  };
+
   const course = await Course.findByIdAndUpdate(
     req.params.id,
-    { status },
+    updatePayload,
     { new: true }
   );
 
   if (!course) throw new ApiError('Course not found', 404);
 
   // Notify instructor
+  const rejectionReason =
+    status === 'rejected' && normalizedReason
+      ? ` Reason: ${normalizedReason}`
+      : '';
   await Notification.create({
     user: course.instructor,
-    message: `Your course "${course.title}" has been ${status}`,
+    message: `Your course "${course.title}" has been ${status}.${rejectionReason}`,
     type: status === 'approved' ? 'course_approved' : 'course_rejected',
     link: `/instructor/courses/${course._id}`,
   });
@@ -160,6 +198,9 @@ const deleteCourse = asyncHandler(async (req, res) => {
     Review.deleteMany({ course: course._id }),
     Payment.deleteMany({ course: course._id }),
     Quiz.deleteMany({ course: course._id }),
+    Assignment.deleteMany({ course: course._id }),
+    AssignmentSubmission.deleteMany({ course: course._id }),
+    Question.deleteMany({ course: course._id }),
     quizIds.length > 0 ? QuizAttempt.deleteMany({ quiz: { $in: quizIds } }) : Promise.resolve(),
     User.updateMany({ bookmarks: course._id }, { $pull: { bookmarks: course._id } }),
     Course.findByIdAndDelete(course._id),
@@ -236,6 +277,7 @@ module.exports = {
   updateUserRole,
   deleteUser,
   getPendingCourses,
+  getCourseReview,
   updateCourseStatus,
   deleteCourse,
   getAnalytics,

@@ -9,6 +9,7 @@ const {
   getMyCourses,
   submitCourse,
   getRecommendations,
+  getInstructorAnalytics,
 } = require('../controllers/courseController');
 const { auth, rbac } = require('../middleware/auth');
 const { uploadImage } = require('../middleware/upload');
@@ -17,16 +18,21 @@ const { uploadImage } = require('../middleware/upload');
 const lessonRoutes = require('./lessonRoutes');
 const quizRoutes = require('./quizRoutes');
 const reviewRoutes = require('./reviewRoutes');
+const questionRoutes = require('./questionRoutes');
+const assignmentRoutes = require('./assignmentRoutes');
 
 // Re-route to sub-routes
 router.use('/:courseId/lessons', lessonRoutes);
 router.use('/:courseId/quizzes', quizRoutes);
 router.use('/:courseId/reviews', reviewRoutes);
+router.use('/:courseId/questions', questionRoutes);
+router.use('/:courseId/assignments', assignmentRoutes);
 
 // Public routes
 router.get('/', getCourses);
 router.get('/recommendations', auth, rbac('student'), getRecommendations);
 router.get('/my-courses', auth, rbac('instructor'), getMyCourses);
+router.get('/instructor-analytics', auth, rbac('instructor'), getInstructorAnalytics);
 router.get('/:id', getCourse);
 
 // Instructor routes

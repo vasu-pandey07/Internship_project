@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { FiArrowLeft, FiPlus, FiTrash2, FiVideo, FiHelpCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiTrash2, FiVideo, FiHelpCircle, FiMessageSquare, FiFileText, FiDownload } from 'react-icons/fi';
 
 const InstructorCourseEditor = () => {
   const { id } = useParams();
@@ -12,6 +12,13 @@ const InstructorCourseEditor = () => {
   const [loading, setLoading] = useState(true);
   const [price, setPrice] = useState(0);
   const [savingPrice, setSavingPrice] = useState(false);
+  const [questions, setQuestions] = useState([]);
+  const [answerDrafts, setAnswerDrafts] = useState({});
+  const [assignments, setAssignments] = useState([]);
+  const [showAssignmentForm, setShowAssignmentForm] = useState(false);
+  const [assignmentForm, setAssignmentForm] = useState({ title: '', description: '', dueDate: '' });
+  const [assignmentFile, setAssignmentFile] = useState(null);
+  const [assignmentSubmissions, setAssignmentSubmissions] = useState({});
 
   // Lesson Form
   const [showLessonForm, setShowLessonForm] = useState(false);
@@ -28,17 +35,22 @@ const InstructorCourseEditor = () => {
 
   const loadData = async () => {
     try {
-      const [cRes, qRes] = await Promise.all([
+      const [cRes, qRes, questionRes, assignmentRes] = await Promise.all([
         API.get(`/courses/${id}`),
-        API.get(`/courses/${id}/quizzes`)
+        API.get(`/courses/${id}/quizzes`),
+        API.get(`/courses/${id}/questions/instructor`),
+        API.get(`/courses/${id}/assignments`),
       ]);
       setCourse(cRes.data.data.course);
       setPrice(Number(cRes.data.data.course.price || 0));
       setQuizzes(qRes.data.data.quizzes);
+      setQuestions(questionRes.data.data.questions || []);
+      setAssignments(assignmentRes.data.data.assignments || []);
     } catch (err) { console.error(err); }
     setLoading(false);
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, [id]);
 
   const handleAddLesson = async (e) => {
@@ -56,7 +68,7 @@ const InstructorCourseEditor = () => {
     try {
       await API.delete(`/courses/${id}/lessons/${lessonId}`);
       loadData();
-    } catch (err) { alert('Error deleting lesson'); }
+    } catch { alert('Error deleting lesson'); }
   };
 
   const addQuestion = () => {
@@ -71,6 +83,16 @@ const InstructorCourseEditor = () => {
       setQuizForm({ title: '', passingScore: 60, questions: [{ question: '', options: ['', '', '', ''], correctAnswer: 0 }] });
       loadData();
     } catch (err) { alert(err.response?.data?.message || 'Error adding quiz'); }
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    if (!window.confirm('Delete this quiz? All student attempts for this quiz will be removed.')) return;
+    try {
+      await API.delete(`/courses/${id}/quizzes/${quizId}`);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error deleting quiz');
+    }
   };
 
   const handleGenerateAIQuiz = async () => {
@@ -128,6 +150,69 @@ const InstructorCourseEditor = () => {
 
   if (loading) return <LoadingSpinner />;
 
+  const handleAnswerQuestion = async (questionId) => {
+    const answer = String(answerDrafts[questionId] || '').trim();
+    if (!answer) return;
+    try {
+      await API.put(`/courses/${id}/questions/${questionId}/answer`, { answer });
+      setAnswerDrafts((prev) => ({ ...prev, [questionId]: '' }));
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to answer question');
+    }
+  };
+
+  const handleCreateAssignment = async (e) => {
+    e.preventDefault();
+    if (!assignmentForm.title.trim()) {
+      alert('Assignment title is required');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('title', assignmentForm.title);
+      formData.append('description', assignmentForm.description);
+      if (assignmentForm.dueDate) formData.append('dueDate', assignmentForm.dueDate);
+      if (assignmentFile) formData.append('file', assignmentFile);
+
+      await API.post(`/courses/${id}/assignments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setShowAssignmentForm(false);
+      setAssignmentForm({ title: '', description: '', dueDate: '' });
+      setAssignmentFile(null);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create assignment');
+    }
+  };
+
+  const handleLoadSubmissions = async (assignmentId) => {
+    try {
+      const res = await API.get(`/courses/${id}/assignments/${assignmentId}/submissions`);
+      setAssignmentSubmissions((prev) => ({ ...prev, [assignmentId]: res.data.data.submissions || [] }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to load submissions');
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId) => {
+    if (!window.confirm('Delete this assignment? All submissions for it will be removed.')) return;
+    try {
+      await API.delete(`/courses/${id}/assignments/${assignmentId}`);
+      setAssignmentSubmissions((prev) => {
+        const next = { ...prev };
+        delete next[assignmentId];
+        return next;
+      });
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete assignment');
+    }
+  };
+
   return (
     <div className="container-narrow" style={{ paddingTop: 'var(--space-8)', paddingBottom: 'var(--space-16)' }}>
       <button onClick={() => navigate('/instructor')} className="btn btn-ghost btn-sm" style={{ marginBottom: 'var(--space-5)', padding: '4px 0' }}>
@@ -140,6 +225,21 @@ const InstructorCourseEditor = () => {
           <span style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>Status:</span>
           <span className={`badge ${statusMap[course.status] || 'badge-neutral'}`} style={{ textTransform: 'capitalize' }}>{course.status}</span>
         </div>
+        {course.status === 'rejected' && course.rejectedReason && (
+          <div
+            style={{
+              marginTop: 'var(--space-3)',
+              border: '1px solid #fecdd3',
+              background: '#fff1f2',
+              color: '#9f1239',
+              borderRadius: 'var(--radius-md)',
+              padding: '10px 12px',
+              fontSize: '0.84rem',
+            }}
+          >
+            <strong>Admin rejection reason:</strong> {course.rejectedReason}
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleUpdatePrice} className="card card-body-lg" style={{ marginBottom: 'var(--space-8)' }}>
@@ -322,14 +422,122 @@ const InstructorCourseEditor = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {quizzes.map((q) => (
             <div key={q._id} className="list-item" style={{ padding: 'var(--space-3) var(--space-4)' }}>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{q.title}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                   {q.questions.length} questions • Passing: {q.passingScore}%
                 </div>
               </div>
+              <button onClick={() => handleDeleteQuiz(q._id)} className="btn btn-icon btn-danger btn-sm" title="Delete quiz">
+                <FiTrash2 size={14} />
+              </button>
             </div>
           ))}
+        </div>
+
+        <div style={{ marginTop: 'var(--space-10)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FiMessageSquare size={18} /> Student Questions
+            </h2>
+          </div>
+          {questions.length === 0 ? (
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.88rem' }}>No student questions yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {questions.map((item) => (
+                <div key={item._id} className="card card-body-lg">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', marginBottom: '8px' }}>
+                    <strong>{item.student?.name}: {item.question}</strong>
+                    <span className={`badge ${item.status === 'answered' ? 'badge-success' : 'badge-warning'}`}>{item.status}</span>
+                  </div>
+                  {item.answer ? (
+                    <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', background: 'var(--bg-base)' }}>
+                      <strong>Your answer</strong>
+                      <p style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>{item.answer}</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <textarea
+                        value={answerDrafts[item._id] || ''}
+                        onChange={(e) => setAnswerDrafts((prev) => ({ ...prev, [item._id]: e.target.value }))}
+                        className="input"
+                        rows={3}
+                        placeholder="Write answer for the student"
+                        style={{ marginBottom: 'var(--space-2)' }}
+                      />
+                      <button className="btn btn-primary btn-sm" onClick={() => handleAnswerQuestion(item._id)}>Send Answer</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 'var(--space-10)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FiFileText size={18} /> Assignments
+            </h2>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowAssignmentForm((prev) => !prev)}>
+              {showAssignmentForm ? 'Cancel' : <><FiPlus size={13} /> Add Assignment</>}
+            </button>
+          </div>
+
+          {showAssignmentForm && (
+            <form onSubmit={handleCreateAssignment} className="card card-body-lg" style={{ marginBottom: 'var(--space-4)' }}>
+              <input className="input" placeholder="Assignment title" value={assignmentForm.title} onChange={(e) => setAssignmentForm((prev) => ({ ...prev, title: e.target.value }))} style={{ marginBottom: 'var(--space-2)' }} />
+              <textarea className="input" rows={3} placeholder="Description" value={assignmentForm.description} onChange={(e) => setAssignmentForm((prev) => ({ ...prev, description: e.target.value }))} style={{ marginBottom: 'var(--space-2)' }} />
+              <input type="date" className="input" value={assignmentForm.dueDate} onChange={(e) => setAssignmentForm((prev) => ({ ...prev, dueDate: e.target.value }))} style={{ marginBottom: 'var(--space-2)' }} />
+              <input type="file" className="input" onChange={(e) => setAssignmentFile(e.target.files?.[0] || null)} style={{ marginBottom: 'var(--space-3)' }} />
+              <button type="submit" className="btn btn-primary btn-sm">Create Assignment</button>
+            </form>
+          )}
+
+          {assignments.length === 0 ? (
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.88rem' }}>No assignments yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {assignments.map((item) => (
+                <div key={item._id} className="card card-body-lg">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <strong>{item.title}</strong>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      {item.fileUrl && (
+                        <a href={item.fileUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
+                          <FiDownload size={13} /> File
+                        </a>
+                      )}
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleLoadSubmissions(item._id)}>View Submissions</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteAssignment(item._id)}>Delete</button>
+                    </div>
+                  </div>
+                  {item.description && <p style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>{item.description}</p>}
+
+                  {assignmentSubmissions[item._id] && (
+                    <div style={{ marginTop: 'var(--space-3)', borderTop: '1px solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}>
+                      <strong>Submissions ({assignmentSubmissions[item._id].length})</strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                        {assignmentSubmissions[item._id].map((sub) => (
+                          <div key={sub._id} className="list-item" style={{ padding: 'var(--space-2) var(--space-3)' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 500 }}>{sub.student?.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{new Date(sub.updatedAt).toLocaleString()}</div>
+                            </div>
+                            {sub.fileUrl && <a href={sub.fileUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">Download</a>}
+                          </div>
+                        ))}
+                        {assignmentSubmissions[item._id].length === 0 && (
+                          <p style={{ color: 'var(--text-tertiary)', margin: 0 }}>No submissions yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduPlatform Study Notes</title>
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #1d4ed8;
+      --border: #dbe3ef;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --good: #166534;
+      --warn: #92400e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #e0ecff, #f0f9ff);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #0f172a;
+    }
+
+    h1 { font-size: 28px; }
+    h2 {
+      margin-top: 28px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+      font-size: 22px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e3a8a;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 2px 10px;
+      margin: 2px 6px 2px 0;
+      font-size: 12px;
+    }
+
+    .muted { color: var(--muted); }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 14px;
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      border: 1px solid #1e293b;
+    }
+
+    code { font-family: Consolas, Monaco, "Courier New", monospace; }
+
+    ul, ol { margin-top: 8px; }
+
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .api-table th,
+    .api-table td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .api-table th {
+      background: #eff6ff;
+    }
+
+    .good { color: var(--good); font-weight: 600; }
+    .warn { color: var(--warn); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <section class="header">
+      <h1>EduPlatform Project Study Notes (MERN)</h1>
+      <p><strong>Project Type:</strong> Online learning platform (Coursera/Udemy style) with <strong>student</strong>, <strong>instructor</strong>, and <strong>admin</strong> roles.</p>
+      <div>
+        <span class="tag">React + Vite</span>
+        <span class="tag">Redux Toolkit</span>
+        <span class="tag">Node.js + Express</span>
+        <span class="tag">MongoDB + Mongoose</span>
+        <span class="tag">JWT Auth</span>
+        <span class="tag">Stripe</span>
+        <span class="tag">Socket.io</span>
+      </div>
+    </section>
+
+    <!-- 1. Project Overview -->
+    <section>
+      <h2>1. Project Overview</h2>
+      <div class="card">
+        <h3>What this project does</h3>
+        <ul>
+          <li>Students can register/login, browse courses, enroll (free/paid), watch lessons, take quizzes, submit assignments, ask questions, and get certificates.</li>
+          <li>Instructors can create/edit courses, add lessons/quizzes/assignments, answer student questions, and submit courses for admin approval.</li>
+          <li>Admin can review/approve/reject courses, manage users/roles, view analytics, and moderate content.</li>
+        </ul>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>Frontend</h3>
+          <ul>
+            <li>React Router for page routing</li>
+            <li>Redux Toolkit slices for auth/courses/enrollments</li>
+            <li>Axios instance with JWT interceptor</li>
+            <li>Role-based protected routes</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Backend</h3>
+          <ul>
+            <li>Express API with controllers/routes/middleware</li>
+            <li>Mongoose models for users, courses, enrollments, quizzes, etc.</li>
+            <li>JWT auth + RBAC middleware</li>
+            <li>Stripe for paid courses, Socket.io for notifications</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>High-level architecture</h3>
+        <pre><code>React UI (client)
+  -> Axios API calls (/api/v1/...)
+    -> Express Routes -> Controllers -> Services
+      -> Mongoose Models -> MongoDB
+    <- JSON response
+  <- Redux state update + UI render</code></pre>
+      </div>
+    </section>
+
+    <!-- 2. Folder Structure -->
+    <section>
+      <h2>2. Folder Structure Explanation</h2>
+      <div class="card">
+<pre><code>internship1/
+|-- client/
+|   |-- src/
+|   |   |-- api/                # Axios setup + token interceptors
+|   |   |-- app/                # Redux store
+|   |   |-- components/         # Shared UI + ProtectedRoute
+|   |   |-- features/           # Redux slices (auth/course/enrollment)
+|   |   |-- hooks/              # Custom hooks (e.g., dark mode)
+|   |   |-- pages/              # Main screens (Home, Dashboards, Player)
+|   |   |-- App.jsx             # Route definitions
+|   |   |-- main.jsx            # React entry
+|   |-- package.json
+|
+|-- server/
+|   |-- config/                 # DB, Stripe, Cloudinary
+|   |-- controllers/            # Request handlers
+|   |-- middleware/             # auth, upload, error handler
+|   |-- models/                 # MongoDB schemas
+|   |-- routes/                 # API endpoints map
+|   |-- services/               # domain/business logic
+|   |-- socket/                 # Socket.io setup
+|   |-- utils/                  # helpers, validators
+|   |-- server.js               # Express bootstrap
+|   |-- package.json
+|
+|-- README.md</code></pre>
+      </div>
+    </section>
+
+    <!-- 3. File-by-File Breakdown -->
+    <section>
+      <h2>3. File-by-File Breakdown (Important Files)</h2>
+
+      <div class="card">
+        <h3>Backend Core</h3>
+        <ul>
+          <li><strong>server/server.js</strong>: Starts Express + HTTP server, applies middleware (helmet/cors/rate-limit), mounts routes, initializes Socket.io, connects DB.</li>
+          <li><strong>server/config/db.js</strong>: MongoDB connection logic with retry and connection events.</li>
+          <li><strong>server/middleware/auth.js</strong>: JWT verification and role-based authorization (`rbac`).</li>
+          <li><strong>server/middleware/errorHandler.js</strong>: Centralized API error formatting.</li>
+          <li><strong>server/middleware/upload.js</strong>: File upload config for images/videos/documents.</li>
+          <li><strong>server/utils/helpers.js</strong>: `asyncHandler` wrapper and custom `ApiError` class.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Backend Domain Files</h3>
+        <ul>
+          <li><strong>authController.js</strong>: register/login/profile APIs.</li>
+          <li><strong>courseController.js</strong>: list/get/create/update/delete course + recommendations + instructor analytics.</li>
+          <li><strong>enrollmentController.js</strong>: enroll, progress tracking, certificate eligibility, analytics, restart course.</li>
+          <li><strong>quizController.js</strong>: create/get/attempt quiz + AI quiz generation.</li>
+          <li><strong>paymentController.js</strong>: Stripe checkout + verify payment + auto-enroll.</li>
+          <li><strong>adminController.js</strong>: user/course moderation + platform analytics.</li>
+          <li><strong>assignmentController.js</strong>: create assignments + student submissions + instructor review.</li>
+          <li><strong>questionController.js</strong>: student asks question, instructor answers.</li>
+          <li><strong>notificationController.js</strong>: get/read notifications.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Backend Models</h3>
+        <ul>
+          <li><strong>User</strong>: identity, role, password hash, bookmarks.</li>
+          <li><strong>Course</strong>: metadata, workflow status, instructor, lessons, stats.</li>
+          <li><strong>Lesson</strong>: video/text lesson units.</li>
+          <li><strong>Enrollment</strong>: per-student progress + completion + certificate state.</li>
+          <li><strong>Quiz / QuizAttempt</strong>: questions, attempts, scores, pass/fail.</li>
+          <li><strong>Review</strong>: rating + comment per student/course.</li>
+          <li><strong>Payment</strong>: Stripe session and payment status.</li>
+          <li><strong>Notification</strong>: in-app alerts history.</li>
+          <li><strong>Assignment / AssignmentSubmission</strong>: coursework flow.</li>
+          <li><strong>Question</strong>: student-instructor Q&amp;A items.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Frontend Core</h3>
+        <ul>
+          <li><strong>client/src/main.jsx</strong>: React root render.</li>
+          <li><strong>client/src/App.jsx</strong>: all app routes + protected route mapping.</li>
+          <li><strong>client/src/api/index.js</strong>: Axios instance with auth header + auto-logout on 401.</li>
+          <li><strong>client/src/app/store.js</strong>: Redux store config.</li>
+          <li><strong>client/src/components/ProtectedRoute.jsx</strong>: route guard by login + role.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Frontend Feature Files</h3>
+        <ul>
+          <li><strong>features/authSlice.js</strong>: register/login/getMe/logout state flow.</li>
+          <li><strong>features/courseSlice.js</strong>: fetch course catalog/current/my/recommendations.</li>
+          <li><strong>features/enrollmentSlice.js</strong>: enroll + progress update + my enrollments.</li>
+          <li><strong>pages/CourseDetail.jsx</strong>: course info, enroll flow, paid checkout trigger.</li>
+          <li><strong>pages/CoursePlayer.jsx</strong>: main learning experience (lessons/quizzes/assignments/questions/review/certificate).</li>
+          <li><strong>pages/StudentDashboard.jsx</strong>: student progress + analytics + recommendations.</li>
+          <li><strong>pages/InstructorDashboard.jsx</strong>: create/manage courses + analytics.</li>
+          <li><strong>pages/InstructorCourseEditor.jsx</strong>: edit lessons/quizzes/questions/assignments in one place.</li>
+          <li><strong>pages/AdminDashboard.jsx</strong>: moderation + platform stats + role management.</li>
+          <li><strong>pages/PaymentSuccess.jsx</strong>: payment verification callback page.</li>
+          <li><strong>pages/Notifications.jsx</strong>: notification inbox.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4. Important Code Explanations -->
+    <section>
+      <h2>4. Important Code Explanations</h2>
+
+      <div class="card">
+        <h3>Function: `auth` middleware (JWT verification)</h3>
+<pre><code>const auth = async (req, res, next) =&gt; {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const user = await User.findById(decoded.id);
+  if (!user) return res.status(401).json({ success: false, message: 'Token is valid but user no longer exists.' });
+
+  req.user = user;
+  next();
+};</code></pre>
+        <p><strong>Explanation:</strong></p>
+        <ul>
+          <li>Line 1-4: Checks if token exists in `Authorization` header.</li>
+          <li>Line 6: Extracts raw JWT token.</li>
+          <li>Line 7: Verifies token signature and decodes payload (`id`, `role`).</li>
+          <li>Line 8-9: Ensures user still exists in DB.</li>
+          <li>Line 11-12: Attaches user to request and allows next middleware/controller.</li>
+        </ul>
+        <p><strong>Why used:</strong> Protects private APIs and enables role checks later (`rbac`).</p>
+      </div>
+
+      <div class="card">
+        <h3>Function: `updateProgress()` (learning progress + certificate unlock)</h3>
+<pre><code>const lessonProgress = enrollment.progress.find(
+  (p) =&gt; p.lesson.toString() === lessonId
+);
+lessonProgress.completed = true;
+lessonProgress.watchedAt = new Date();
+
+const totalLessons = enrollment.progress.length;
+const completedLessons = enrollment.progress.filter((p) =&gt; p.completed).length;
+enrollment.completionPercentage = Math.round((completedLessons / totalLessons) * 100);
+
+const eligibility = await evaluateEnrollmentCertificateEligibility({
+  courseId: enrollment.course,
+  studentId: enrollment.student,
+  progress: enrollment.progress,
+});
+
+if (eligibility.eligible &amp;&amp; !enrollment.completedAt) {
+  enrollment.completedAt = new Date();
+}</code></pre>
+        <p><strong>Explanation:</strong></p>
+        <ul>
+          <li>Finds matching lesson in enrollment progress array.</li>
+          <li>Marks lesson completed and sets timestamp.</li>
+          <li>Recalculates percent completion.</li>
+          <li>Calls certificate service to check both rules: all lessons complete + all quizzes passed.</li>
+          <li>If eligible, sets `completedAt` (used by certificate API).</li>
+        </ul>
+        <p><strong>Why used:</strong> Central place to keep progress, completion, and certificate logic consistent.</p>
+      </div>
+
+      <div class="card">
+        <h3>Function: `createCheckout()` (Stripe payment start)</h3>
+<pre><code>const session = await stripe.checkout.sessions.create({
+  payment_method_types: ['card'],
+  line_items: [{
+    price_data: {
+      currency: 'usd',
+      product_data: { name: course.title },
+      unit_amount: Math.round(course.price * 100),
+    },
+    quantity: 1,
+  }],
+  mode: 'payment',
+  success_url: `${clientUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: `${clientUrl}/payment/cancel`,
+  metadata: {
+    courseId: course._id.toString(),
+    studentId: req.user._id.toString(),
+  },
+});</code></pre>
+        <p><strong>Explanation:</strong></p>
+        <ul>
+          <li>Creates one-time Stripe checkout session for selected course.</li>
+          <li>Converts dollar amount to cents (`*100`) because Stripe expects smallest currency unit.</li>
+          <li>Sets success/cancel URLs to frontend routes.</li>
+          <li>Stores `courseId` and `studentId` in metadata for later verification and auto-enrollment.</li>
+        </ul>
+        <p><strong>Why used:</strong> Securely handles paid enrollment without storing card details on your server.</p>
+      </div>
+
+      <div class="card">
+        <h3>Function: Axios request interceptor (frontend auth)</h3>
+<pre><code>API.interceptors.request.use((config) =&gt; {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});</code></pre>
+        <p><strong>Explanation:</strong></p>
+        <ul>
+          <li>Runs before every API request.</li>
+          <li>Reads JWT from localStorage.</li>
+          <li>Adds `Authorization: Bearer &lt;token&gt;` header automatically.</li>
+        </ul>
+        <p><strong>Why used:</strong> Avoids writing token header manually in every component.</p>
+      </div>
+    </section>
+
+    <!-- 5. Data Flow -->
+    <section>
+      <h2>5. Data Flow (Frontend -> API -> Backend -> DB -> Response)</h2>
+      <div class="card">
+        <h3>Example: Student enrolls in a free course</h3>
+        <ol>
+          <li>Student clicks <strong>Enroll Now</strong> in `CourseDetail.jsx`.</li>
+          <li>Frontend dispatches `enrollInCourse(courseId)` thunk.</li>
+          <li>Axios sends `POST /api/v1/enrollments` with JWT header.</li>
+          <li>`auth` middleware validates JWT, sets `req.user`.</li>
+          <li>`enrollmentController.enroll` validates course, checks existing enrollment, checks price.</li>
+          <li>Backend creates enrollment document + initial lesson progress array.</li>
+          <li>Course `totalStudents` increments and notification created.</li>
+          <li>JSON response returns new enrollment.</li>
+          <li>Redux slice updates store; UI reflects enrolled state.</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>Example: Paid course flow</h3>
+        <ol>
+          <li>Frontend calls `POST /payments/create-checkout`.</li>
+          <li>Backend creates Stripe checkout session and pending payment record.</li>
+          <li>User pays on Stripe page.</li>
+          <li>Frontend opens `/payment/success?session_id=...` page.</li>
+          <li>`PaymentSuccess.jsx` calls `GET /payments/verify/:sessionId`.</li>
+          <li>Backend confirms Stripe session status and marks payment `completed`.</li>
+          <li>Backend auto-creates enrollment and updates course stats.</li>
+          <li>Student sees success UI and can start course.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 6. Key Concepts -->
+    <section>
+      <h2>6. Key Concepts Used</h2>
+      <div class="two-col">
+        <div class="card">
+          <h3>JWT Authentication</h3>
+          <ul>
+            <li>JWT created in `User.generateToken()`.</li>
+            <li>Sent after register/login.</li>
+            <li>Stored in localStorage and attached by Axios interceptor.</li>
+            <li>Verified by backend `auth` middleware.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Redux Toolkit</h3>
+          <ul>
+            <li>Slices: `auth`, `courses`, `enrollments`.</li>
+            <li>`createAsyncThunk` handles async API calls.</li>
+            <li>Store updates trigger reactive UI render.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Middleware</h3>
+          <ul>
+            <li>`auth` and `rbac` for secure role access.</li>
+            <li>`errorHandler` for standard API error responses.</li>
+            <li>`upload` for image/video/document files.</li>
+            <li>Rate limiting, CORS, Helmet for API security.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Database Schema Design</h3>
+          <ul>
+            <li>Relations with ObjectId refs (User -> Course, Course -> Lesson, etc.).</li>
+            <li>Indexes for speed (email, status, category, compound unique indexes).</li>
+            <li>Domain-driven collections: enrollments, quiz attempts, notifications.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Important APIs -->
+    <section>
+      <h2>7. Important APIs</h2>
+      <div class="card">
+        <table class="api-table">
+          <thead>
+            <tr>
+              <th>Endpoint</th>
+              <th>Method</th>
+              <th>Purpose</th>
+              <th>Request</th>
+              <th>Response (main data)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>/api/v1/auth/register</td>
+              <td>POST</td>
+              <td>Create account</td>
+              <td>{ name, email, password, role }</td>
+              <td>{ user, token }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/auth/login</td>
+              <td>POST</td>
+              <td>Login user</td>
+              <td>{ email, password }</td>
+              <td>{ user, token }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/courses</td>
+              <td>GET</td>
+              <td>List approved courses with filters</td>
+              <td>query params (search, category, page...)</td>
+              <td>{ courses, pagination }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/courses/:id</td>
+              <td>GET</td>
+              <td>Get one course + lessons</td>
+              <td>path param id</td>
+              <td>{ course }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/enrollments</td>
+              <td>POST</td>
+              <td>Enroll in free course</td>
+              <td>{ courseId }</td>
+              <td>{ enrollment }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/enrollments/:id/progress</td>
+              <td>PUT</td>
+              <td>Mark lesson complete</td>
+              <td>{ lessonId }</td>
+              <td>{ enrollment }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/payments/create-checkout</td>
+              <td>POST</td>
+              <td>Create Stripe session</td>
+              <td>{ courseId }</td>
+              <td>{ sessionId, url }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/payments/verify/:sessionId</td>
+              <td>GET</td>
+              <td>Verify payment and enroll</td>
+              <td>path param sessionId</td>
+              <td>{ status }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/courses/:courseId/quizzes/:id/attempt</td>
+              <td>POST</td>
+              <td>Submit quiz attempt</td>
+              <td>{ answers: number[] }</td>
+              <td>{ attempt, correctAnswers }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/admin/courses/:id/status</td>
+              <td>PUT</td>
+              <td>Approve/reject course</td>
+              <td>{ status, reason? }</td>
+              <td>{ course }</td>
+            </tr>
+            <tr>
+              <td>/api/v1/notifications</td>
+              <td>GET</td>
+              <td>List user notifications</td>
+              <td>query params</td>
+              <td>{ notifications, unreadCount, pagination }</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 8. Interview Questions -->
+    <section>
+      <h2>8. Common Interview Questions</h2>
+      <div class="card">
+        <ol>
+          <li>Explain your full-stack architecture and why you separated controller/service/model layers.</li>
+          <li>How does JWT authentication work end-to-end in your project?</li>
+          <li>How do you enforce role-based access for student/instructor/admin?</li>
+          <li>Explain your enrollment flow for free vs paid courses.</li>
+          <li>How is course progress tracked and how is certificate eligibility calculated?</li>
+          <li>How did you design MongoDB schemas and indexes for performance?</li>
+          <li>How does Redux Toolkit help your frontend state management?</li>
+          <li>Explain one complex component deeply (example: `CoursePlayer.jsx`).</li>
+          <li>How do you handle errors consistently in backend APIs?</li>
+          <li>How does your admin moderation flow work, including AI assistance and manual review?</li>
+          <li>How would you improve scalability (caching, queue jobs, CDN, pagination)?</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 9. Summary -->
+    <section>
+      <h2>9. Summary &amp; Revision Checklist</h2>
+      <div class="card">
+        <p><strong>Key takeaways:</strong></p>
+        <ul>
+          <li>This is a complete MERN learning platform with strong role-based workflows.</li>
+          <li>Core engineering strengths: <strong>auth + RBAC</strong>, <strong>modular API design</strong>, <strong>progress/certificate logic</strong>, <strong>payment integration</strong>, <strong>admin moderation</strong>.</li>
+          <li>Frontend and backend are clearly separated and communicate via consistent REST responses.</li>
+        </ul>
+
+        <p><strong>Revise before interviews:</strong></p>
+        <ul>
+          <li class="good">Be ready to whiteboard auth and data flow.</li>
+          <li class="good">Be ready to explain 2-3 key controller functions line-by-line.</li>
+          <li class="good">Know why each model exists and how they relate.</li>
+          <li class="warn">Know tradeoffs: localStorage token storage, payment verification design, and potential scaling limits.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -8,13 +8,18 @@ import { useNavigate } from 'react-router-dom';
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { myCourses, loading } = useSelector((s) => s.courses);
-  const { user } = useSelector((s) => s.auth);
+  const { myCourses } = useSelector((s) => s.courses);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', category: 'Web Development', level: 'Beginner', price: 0, tags: '' });
   const [creating, setCreating] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
 
-  useEffect(() => { dispatch(fetchMyCourses()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchMyCourses());
+    API.get('/courses/instructor-analytics')
+      .then((res) => setAnalytics(res.data.data.analytics))
+      .catch(() => setAnalytics(null));
+  }, [dispatch]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -31,11 +36,11 @@ const InstructorDashboard = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this course?')) return;
-    try { await API.delete(`/courses/${id}`); dispatch(fetchMyCourses()); } catch (e) { alert('Delete failed'); }
+    try { await API.delete(`/courses/${id}`); dispatch(fetchMyCourses()); } catch { alert('Delete failed'); }
   };
 
   const handleSubmit = async (id) => {
-    try { await API.put(`/courses/${id}/submit`); dispatch(fetchMyCourses()); } catch (e) { alert(e.response?.data?.message || 'Submit failed'); }
+    try { await API.put(`/courses/${id}/submit`); dispatch(fetchMyCourses()); } catch (err) { alert(err.response?.data?.message || 'Submit failed'); }
   };
 
   const statusMap = {
@@ -48,10 +53,11 @@ const InstructorDashboard = () => {
   const cats = ['Web Development','Mobile Development','Data Science','Machine Learning','Cloud Computing','DevOps','Cybersecurity','UI/UX Design','Business','Other'];
 
   const statItems = [
-    { icon: FiBook, label: 'Total Courses', value: myCourses.length, color: '#6366f1' },
-    { icon: FiEye, label: 'Published', value: myCourses.filter(c => c.status === 'approved').length, color: '#10b981' },
-    { icon: FiUsers, label: 'Total Students', value: myCourses.reduce((a, c) => a + (c.totalStudents || 0), 0), color: '#ec4899' },
-    { icon: FiStar, label: 'Avg Rating', value: (myCourses.reduce((a, c) => a + (c.avgRating || 0), 0) / (myCourses.length || 1)).toFixed(1), color: '#f59e0b' },
+    { icon: FiBook, label: 'Total Courses', value: analytics?.totalCourses ?? myCourses.length, color: '#6366f1' },
+    { icon: FiEye, label: 'Published', value: analytics?.publishedCourses ?? myCourses.filter(c => c.status === 'approved').length, color: '#10b981' },
+    { icon: FiUsers, label: 'Total Students', value: analytics?.totalStudents ?? myCourses.reduce((a, c) => a + (c.totalStudents || 0), 0), color: '#ec4899' },
+    { icon: FiStar, label: 'Avg Rating', value: (analytics?.averageRating ?? 0).toFixed(1), color: '#f59e0b' },
+    { icon: FiUsers, label: 'Revenue', value: `$${(analytics?.totalRevenue ?? 0).toFixed(2)}`, color: '#0ea5e9' },
   ];
 
   return (
@@ -68,10 +74,10 @@ const InstructorDashboard = () => {
 
       {/* Stats */}
       <div className="grid-stats stagger" style={{ marginBottom: 'var(--space-8)' }}>
-        {statItems.map(({ icon: Icon, label, value, color }) => (
+        {statItems.map(({ icon, label, value, color }) => (
           <div key={label} className="stat-card">
             <div className="stat-icon" style={{ background: `${color}12` }}>
-              <Icon size={18} style={{ color }} />
+              {icon({ size: 18, style: { color } })}
             </div>
             <div>
               <div className="stat-value" style={{ fontSize: '1.25rem' }}>{value}</div>
@@ -152,6 +158,11 @@ const InstructorDashboard = () => {
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>{c.totalStudents || 0} students</span>
                     <span className={`badge ${status.cls}`}>{status.text}</span>
                   </div>
+                  {c.status === 'rejected' && c.rejectedReason && (
+                    <p style={{ marginTop: '6px', fontSize: '0.8rem', color: '#be123c' }}>
+                      Rejection reason: {c.rejectedReason}
+                    </p>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
                   <button onClick={() => navigate(`/instructor/courses/${c._id}`)} className="btn btn-secondary btn-sm" title="Edit">

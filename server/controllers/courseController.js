@@ -1,6 +1,11 @@
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
+const Quiz = require('../models/Quiz');
+const Assignment = require('../models/Assignment');
+const AssignmentSubmission = require('../models/AssignmentSubmission');
+const Question = require('../models/Question');
+const Payment = require('../models/Payment');
 const { asyncHandler, ApiError } = require('../utils/helpers');
 
 /**
@@ -75,9 +80,13 @@ const getCourse = asyncHandler(async (req, res) => {
     throw new ApiError('Course not found', 404);
   }
 
+  const totalQuizzes = await Quiz.countDocuments({ course: course._id });
+  const courseData = course.toObject();
+  courseData.totalQuizzes = totalQuizzes;
+
   res.status(200).json({
     success: true,
-    data: { course },
+    data: { course: courseData },
   });
 });
 
@@ -158,6 +167,9 @@ const deleteCourse = asyncHandler(async (req, res) => {
 
   // Delete associated enrollments
   await Enrollment.deleteMany({ course: course._id });
+  await Assignment.deleteMany({ course: course._id });
+  await AssignmentSubmission.deleteMany({ course: course._id });
+  await Question.deleteMany({ course: course._id });
 
   await Course.findByIdAndDelete(req.params.id);
 
@@ -204,6 +216,7 @@ const submitCourse = asyncHandler(async (req, res) => {
   }
 
   course.status = 'pending';
+  course.rejectedReason = '';
   await course.save();
 
   res.status(200).json({
@@ -278,6 +291,58 @@ const getRecommendations = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Get instructor analytics (revenue + weighted avg rating)
+ * @route   GET /api/v1/courses/instructor-analytics
+ * @access  Instructor
+ */
+const getInstructorAnalytics = asyncHandler(async (req, res) => {
+  const courses = await Course.find({ instructor: req.user._id }).select(
+    '_id status totalStudents avgRating totalReviews'
+  );
+
+  const courseIds = courses.map((course) => course._id);
+
+  let totalRevenue = 0;
+  if (courseIds.length > 0) {
+    const revenueAgg = await Payment.aggregate([
+      {
+        $match: {
+          course: { $in: courseIds },
+          status: 'completed',
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$amount' },
+        },
+      },
+    ]);
+    totalRevenue = revenueAgg[0]?.total || 0;
+  }
+
+  const totalReviews = courses.reduce((sum, course) => sum + (course.totalReviews || 0), 0);
+  const weightedRatingSum = courses.reduce(
+    (sum, course) => sum + (course.avgRating || 0) * (course.totalReviews || 0),
+    0
+  );
+  const averageRating = totalReviews > 0 ? Number((weightedRatingSum / totalReviews).toFixed(1)) : 0;
+
+  res.status(200).json({
+    success: true,
+    data: {
+      analytics: {
+        totalCourses: courses.length,
+        publishedCourses: courses.filter((course) => course.status === 'approved').length,
+        totalStudents: courses.reduce((sum, course) => sum + (course.totalStudents || 0), 0),
+        totalRevenue,
+        averageRating,
+      },
+    },
+  });
+});
+
 module.exports = {
   getCourses,
   getCourse,
@@ -287,4 +352,5 @@ module.exports = {
   getMyCourses,
   submitCourse,
   getRecommendations,
+  getInstructorAnalytics,
 };

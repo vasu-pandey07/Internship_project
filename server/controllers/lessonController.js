@@ -22,6 +22,10 @@ const extractYouTubeVideoId = (url = '') => {
 const fetchYoutubeTranscript = async (videoId) => {
   if (!videoId) return '';
 
+  const startedAt = Date.now();
+  const maxTotalMs = 6000;
+  const perRequestTimeoutMs = 2500;
+
   const endpointCandidates = [
     `https://video.google.com/timedtext?lang=en&v=${videoId}`,
     `https://video.google.com/timedtext?lang=en-US&v=${videoId}`,
@@ -29,11 +33,15 @@ const fetchYoutubeTranscript = async (videoId) => {
   ];
 
   for (const endpoint of endpointCandidates) {
+    if (Date.now() - startedAt > maxTotalMs) {
+      break;
+    }
+
+    let timer;
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 7000);
+      timer = setTimeout(() => controller.abort(), perRequestTimeoutMs);
       const response = await fetch(endpoint, { signal: controller.signal });
-      clearTimeout(timer);
 
       if (!response.ok) continue;
       const xml = await response.text();
@@ -50,6 +58,8 @@ const fetchYoutubeTranscript = async (videoId) => {
       }
     } catch (err) {
       // Try the next language candidate.
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -83,6 +93,18 @@ const classifyAiIssue = (rawMessage = '') => {
     return 'network timeout while contacting the AI provider';
   }
   return 'the AI provider is temporarily unavailable';
+};
+
+const isQuotaOrAuthIssue = (rawMessage = '') => {
+  const msg = String(rawMessage || '').toLowerCase();
+  return (
+    msg.includes('quota') ||
+    msg.includes('resource_exhausted') ||
+    msg.includes('rate limit') ||
+    msg.includes('api key') ||
+    msg.includes('permission') ||
+    msg.includes('unauthorized')
+  );
 };
 
 const buildBestEffortSummary = ({ lessonTitle, compactContext, question }) => {
@@ -270,19 +292,22 @@ const askAITutor = asyncHandler(async (req, res) => {
   const course = await Course.findById(req.params.courseId);
   if (!course) throw new ApiError('Course not found', 404);
 
+  const userRole = String(req.user.role || '').toLowerCase();
   const isOwnerInstructor =
-    req.user.role === 'instructor' && course.instructor.toString() === req.user._id.toString();
+    userRole === 'instructor' && course.instructor.toString() === req.user._id.toString();
+
+  const isAdmin = userRole === 'admin';
 
   let isEnrolledStudent = false;
-  if (req.user.role === 'student') {
+  if (userRole === 'student') {
     const enrollment = await Enrollment.findOne({
       student: req.user._id,
-      course: req.params.courseId,
+      course: course._id,
     });
     isEnrolledStudent = Boolean(enrollment);
   }
 
-  if (!isOwnerInstructor && !isEnrolledStudent) {
+  if (!isOwnerInstructor && !isEnrolledStudent && !isAdmin) {
     throw new ApiError('Not authorized to use AI tutor for this lesson', 403);
   }
 
@@ -340,11 +365,11 @@ Respond with:
 3) A quick 1-question check for understanding
 Keep it concise and clear.`;
 
-  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
   let lastError = null;
 
   for (const model of modelsToTry) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const response = await ai.models.generateContent({
           model,
@@ -381,10 +406,14 @@ Keep it concise and clear.`;
         lastError = error;
         const msg = parseErrorMessage(error);
         console.warn(`AI tutor error on ${model} attempt ${attempt}:`, msg);
+
+        // Quota/auth failures will not recover with immediate retry.
+        if (isQuotaOrAuthIssue(msg)) {
+          break;
+        }
+
         if (attempt < 2) {
-          await sleep(1000 * attempt);
-        } else if (attempt < 3) {
-          await sleep(1800);
+          await sleep(700);
         }
       }
     }
